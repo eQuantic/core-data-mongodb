@@ -24,9 +24,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="eQuantic.Core.Data" Version="1.7.2" />
-    <PackageReference Include="MongoDb.Driver" Version="2.4.3" />
+    <PackageReference Include="eQuantic.Core.Data" Version="2.0.0.4" />
+    <PackageReference Include="MongoDb.Driver" Version="2.9.2" />
     <PackageReference Include="MSBump" Version="2.3.2" PrivateAssets="All" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Repository\Write\" />
+  </ItemGroup>
 </Project>
