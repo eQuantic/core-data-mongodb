@@ -2,9 +2,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.0.0.1-dev0001</Version>
-    <TargetFramework>netstandard1.6</TargetFramework>
-    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+    <Version>1.0.0.1-dev0004</Version>
+    <TargetFramework>netstandard2.0</TargetFramework>
+
     <PackageId>eQuantic.Core.Data.MongoDb</PackageId>
     <PackageTags>eQuantic;Core;Data;MongoDB;Library;Repository;Pattern</PackageTags>
     <PackageReleaseNotes>Entity ignorant persistance with Repository Pattern</PackageReleaseNotes>
@@ -25,11 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="eQuantic.Core.Data" Version="2.0.0.4" />
-    <PackageReference Include="MongoDb.Driver" Version="2.9.2" />
+    <PackageReference Include="MongoDb.Driver" Version="2.10.0" />
     <PackageReference Include="MSBump" Version="2.3.2" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Repository\Write\" />
   </ItemGroup>
 </Project>
