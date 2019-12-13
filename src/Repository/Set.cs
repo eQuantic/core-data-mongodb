@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using eQuantic.Core.Data.Repository;
@@ -15,6 +16,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
     public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEntity>
         where TEntity : class, IEntity, new()
     {
+        private const string IdKey = "id";
         private readonly IMongoCollection<TEntity> collection;
         private readonly IMongoQueryable<TEntity> internalQueryable;
 
@@ -30,6 +32,12 @@ namespace eQuantic.Core.Data.MongoDb.Repository
 
         public IQueryProvider Provider => internalQueryable.Provider;
 
+        public long DeleteMany(Expression<Func<TEntity, bool>> filter)
+        {
+            var result = this.collection.DeleteMany(filter);
+            return result.DeletedCount;
+        }
+
         public IEnumerable<TEntity> Execute()
         {
             return internalQueryable.ToList();
@@ -42,7 +50,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
                 var expression = GetKeyExpression(key);
                 return this.collection.Find(expression).FirstOrDefault();
             }
-            var filter = Builders<TEntity>.Filter.Eq("id", ObjectId.Parse(key.ToString()));
+            var filter = Builders<TEntity>.Filter.Eq(IdKey, ObjectId.Parse(key.ToString()));
             return this.collection.Find(filter).FirstOrDefault();
         }
 
@@ -55,7 +63,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
                 cursor = await this.collection.FindAsync(expression);
                 return cursor.FirstOrDefault();
             }
-            var filter = Builders<TEntity>.Filter.Eq("id", ObjectId.Parse(key.ToString()));
+            var filter = Builders<TEntity>.Filter.Eq(IdKey, ObjectId.Parse(key.ToString()));
             cursor = await this.collection.FindAsync(filter);
             return cursor.FirstOrDefault();
         }
@@ -94,6 +102,26 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return exp;
         }
 
+        public virtual TKey GetKeyValue<TKey>(TEntity item)
+        {
+            var keys = GetKeys<TKey>();
+            var values = new Dictionary<string, object>();
+            if (keys.Any())
+            {
+                var itemType = typeof(TEntity);
+                foreach (var key in keys)
+                {
+                    var prop = itemType.GetProperty(key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    if (prop == null) continue;
+
+                    values.Add(key, prop.GetValue(item));
+                }
+            }
+
+            if (values.Count > 1) return GetKeyObject<TKey>(values);
+            return (TKey)values.FirstOrDefault().Value;
+        }
+
         public IAsyncCursor<TEntity> ToCursor(CancellationToken cancellationToken = default)
         {
             return internalQueryable.ToCursor(cancellationToken);
@@ -102,6 +130,12 @@ namespace eQuantic.Core.Data.MongoDb.Repository
         public Task<IAsyncCursor<TEntity>> ToCursorAsync(CancellationToken cancellationToken = default)
         {
             return internalQueryable.ToCursorAsync(cancellationToken);
+        }
+
+        public void Update(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateExpression)
+        {
+            var update = Builders<TEntity>.Update.Set("i", 110);
+            this.collection.UpdateOne(filter, update);
         }
 
         private Dictionary<string, object> GetKeyDictionary<TKey>(TKey key)
@@ -115,6 +149,30 @@ namespace eQuantic.Core.Data.MongoDb.Repository
                 dict.Add(prop.Name, value);
             }
             return dict;
+        }
+
+        private T GetKeyObject<T>(Dictionary<string, object> dict)
+        {
+            Type type = typeof(T);
+            var obj = Activator.CreateInstance(type);
+
+            foreach (var kv in dict)
+            {
+                type.GetProperty(kv.Key).SetValue(obj, kv.Value);
+            }
+            return (T)obj;
+        }
+
+        private IEnumerable<string> GetKeys<TKey>()
+        {
+            var keyType = typeof(TKey);
+
+            if (Type.GetTypeCode(keyType) == TypeCode.Object)
+            {
+                var props = keyType.GetProperties();
+                return props.Select(p => p.Name);
+            }
+            return new[] { IdKey };
         }
     }
 }

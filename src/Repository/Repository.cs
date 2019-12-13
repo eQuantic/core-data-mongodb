@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using eQuantic.Core.Data.MongoDb.Repository.Read;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Linq.Specification;
@@ -21,17 +23,33 @@ namespace eQuantic.Core.Data.MongoDb.Repository
 
         public int DeleteMany(Expression<Func<TEntity, bool>> filter)
         {
-            throw new NotImplementedException();
+            return Convert.ToInt32(GetSet().DeleteMany(filter));
         }
 
         public int DeleteMany(ISpecification<TEntity> specification)
         {
-            throw new NotImplementedException();
+            return DeleteMany(specification.SatisfiedBy());
         }
 
         public void Merge(TEntity persisted, TEntity current)
         {
-            throw new NotImplementedException();
+            var entityType = typeof(TEntity);
+
+            var properties = entityType.GetTypeInfo().GetProperties()
+                .Where(prop => prop.CanRead && prop.CanWrite);
+
+            foreach (var prop in properties)
+            {
+                var value = prop.GetValue(current, null);
+                if (value != null)
+                    prop.SetValue(persisted, value, null);
+            }
+
+            var key = GetSet().GetKeyValue<TKey>(persisted);
+            var expression = GetSet().GetKeyExpression(key);
+
+            GetSet().Update(expression)
+            AppendOrExecuteCommand(GetSet().Where(expression).Select(o => persisted).Update());
         }
 
         public void Modify(TEntity item)
