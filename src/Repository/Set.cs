@@ -10,6 +10,8 @@ using eQuantic.Core.Data.Repository;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace eQuantic.Core.Data.MongoDb.Repository
 {
@@ -134,8 +136,68 @@ namespace eQuantic.Core.Data.MongoDb.Repository
 
         public void Update(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateExpression)
         {
-            var update = Builders<TEntity>.Update.Set("i", 110);
-            this.collection.UpdateOne(filter, update);
+            UpdateDefinition<TEntity> updateDefinition = null;
+
+            var updateBuilder = Builders<TEntity>.Update;
+
+            var values = GetDictionaryFromExpression(updateExpression.Body);
+
+            foreach (var kvp in values)
+            {
+                if (updateDefinition == null)
+                    updateDefinition = updateBuilder.Set(kvp.Key, kvp.Value);
+                else updateDefinition.Set(kvp.Key, kvp.Value);
+            }
+
+            this.collection.UpdateOne(filter, updateDefinition);
+        }
+
+        private static void SetDictionaryValuesFromJToken(Dictionary<string, object> dict, JToken token, string prefix, bool explodeArray = true)
+        {
+            switch (token.Type)
+            {
+                case JTokenType.Object:
+                    foreach (JProperty prop in token.Children<JProperty>())
+                    {
+                        SetDictionaryValuesFromJToken(dict, prop.Value, string.IsNullOrEmpty(prefix) ? prop.Name : prefix + "." + prop.Name, explodeArray);
+                    }
+                    break;
+
+                case JTokenType.Array:
+                    int index = 0;
+                    if (explodeArray)
+                    {
+                        foreach (JToken value in token.Children())
+                        {
+                            SetDictionaryValuesFromJToken(dict, value, $"{prefix}[{index}]", explodeArray);
+                            index++;
+                        }
+                    }
+                    else
+                    {
+                        dict.Add(prefix, string.Join(",", token.Children().Select(v => ((JValue)v).Value)));
+                    }
+                    break;
+
+                default:
+                    dict.Add(prefix, ((JValue)token).Value);
+                    break;
+            }
+        }
+
+        private Dictionary<string, object> GetDictionaryFromExpression(Expression expression)
+        {
+            var dictionary = new Dictionary<string, object>();
+            SetDictionaryValuesFromExpression(dictionary, expression);
+            return dictionary;
+        }
+
+        private Dictionary<string, object> GetDictionaryFromObject(object parameters, string prefix = "")
+        {
+            Dictionary<string, object> dict = new Dictionary<string, object>();
+            JToken token = JToken.Parse(JsonConvert.SerializeObject(parameters));
+            SetDictionaryValuesFromJToken(dict, token, prefix);
+            return dict;
         }
 
         private Dictionary<string, object> GetKeyDictionary<TKey>(TKey key)
@@ -173,6 +235,37 @@ namespace eQuantic.Core.Data.MongoDb.Repository
                 return props.Select(p => p.Name);
             }
             return new[] { IdKey };
+        }
+
+        private void SetDictionaryValuesFromExpression(Dictionary<string, object> dictionary, Expression expression, string prefix = "")
+        {
+            switch (expression)
+            {
+                case MemberInitExpression memberInitExpression:
+
+                    foreach (var binding in memberInitExpression.Bindings)
+                    {
+                        var memberAssignment = binding as MemberAssignment;
+                        var propName = binding.Member.Name;
+
+                        switch (memberAssignment.Expression)
+                        {
+                            case MemberInitExpression exp:
+                                SetDictionaryValuesFromExpression(dictionary, exp, $"{propName}.");
+                                break;
+
+                            case ConstantExpression exp:
+                                dictionary[$"{prefix}{propName}"] = exp.Value;
+                                break;
+                        }
+                    }
+
+                    break;
+
+                case MemberExpression memberExpression:
+
+                    break;
+            }
         }
     }
 }

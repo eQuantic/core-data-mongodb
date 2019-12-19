@@ -48,13 +48,17 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             var key = GetSet().GetKeyValue<TKey>(persisted);
             var expression = GetSet().GetKeyExpression(key);
 
-            GetSet().Update(expression)
-            AppendOrExecuteCommand(GetSet().Where(expression).Select(o => persisted).Update());
+            GetSet().Update(expression, o => persisted);
         }
 
         public void Modify(TEntity item)
         {
-            throw new NotImplementedException();
+            if (item == (TEntity)null) return;
+
+            var key = GetSet().GetKeyValue<TKey>(item);
+            var expression = GetSet().GetKeyExpression(key);
+
+            GetSet().Update(expression, o => item);
         }
 
         public void Remove(TEntity item)
