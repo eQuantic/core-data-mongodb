@@ -251,7 +251,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
                         switch (memberAssignment.Expression)
                         {
                             case MemberInitExpression exp:
-                                SetDictionaryValuesFromExpression(dictionary, exp, $"{propName}.");
+                                SetDictionaryValuesFromExpression(dictionary, exp, $"{prefix}{propName}.");
                                 break;
 
                             case ConstantExpression exp:
@@ -263,6 +263,15 @@ namespace eQuantic.Core.Data.MongoDb.Repository
                     break;
 
                 case MemberExpression memberExpression:
+                    var constantExpression = memberExpression.Expression as ConstantExpression;
+                    var memberValue = constantExpression.Value;
+                    var value = memberValue.GetType().GetField(memberExpression.Member.Name).GetValue(memberValue);
+                    var dict = GetDictionaryFromObject(value, prefix);
+
+                    foreach (var kvp in dict)
+                    {
+                        dictionary[kvp.Key] = kvp.Value;
+                    }
 
                     break;
             }
