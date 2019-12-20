@@ -18,7 +18,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
 
         public void Add(TEntity item)
         {
-            throw new NotImplementedException();
+            GetSet().Insert(item);
         }
 
         public int DeleteMany(Expression<Func<TEntity, bool>> filter)
@@ -48,7 +48,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             var key = GetSet().GetKeyValue<TKey>(persisted);
             var expression = GetSet().GetKeyExpression(key);
 
-            GetSet().Update(expression, o => persisted);
+            GetSet().Update(expression, () => persisted);
         }
 
         public void Modify(TEntity item)
@@ -58,27 +58,32 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             var key = GetSet().GetKeyValue<TKey>(item);
             var expression = GetSet().GetKeyExpression(key);
 
-            GetSet().Update(expression, o => item);
+            GetSet().Update(expression, () => item);
         }
 
         public void Remove(TEntity item)
         {
-            throw new NotImplementedException();
+            var key = GetSet().GetKeyValue<TKey>(item);
+            var expression = GetSet().GetKeyExpression(key);
+
+            GetSet().Delete(expression);
         }
 
         public void TrackItem(TEntity item)
         {
-            throw new NotImplementedException();
+            if (item == (TEntity)null) return;
         }
 
         public int UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
         {
-            throw new NotImplementedException();
+            var item = updateFactory.Compile()(null);
+            var result = GetSet().UpdateMany(filter, () => item);
+            return Convert.ToInt32(result);
         }
 
         public int UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
         {
-            throw new NotImplementedException();
+            return UpdateMany(specification.SatisfiedBy(), updateFactory);
         }
     }
 }

@@ -34,9 +34,25 @@ namespace eQuantic.Core.Data.MongoDb.Repository
 
         public IQueryProvider Provider => internalQueryable.Provider;
 
+        public void Delete(Expression<Func<TEntity, bool>> filter)
+        {
+            this.collection.DeleteOne(filter);
+        }
+
+        public Task DeleteAsync(Expression<Func<TEntity, bool>> filter)
+        {
+            return this.collection.DeleteOneAsync(filter);
+        }
+
         public long DeleteMany(Expression<Func<TEntity, bool>> filter)
         {
             var result = this.collection.DeleteMany(filter);
+            return result.DeletedCount;
+        }
+
+        public async Task<long> DeleteManyAsync(Expression<Func<TEntity, bool>> filter)
+        {
+            var result = await this.collection.DeleteManyAsync(filter);
             return result.DeletedCount;
         }
 
@@ -124,6 +140,16 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return (TKey)values.FirstOrDefault().Value;
         }
 
+        public void Insert(TEntity item)
+        {
+            this.collection.InsertOne(item);
+        }
+
+        public Task InsertAsync(TEntity item)
+        {
+            return this.collection.InsertOneAsync(item);
+        }
+
         public IAsyncCursor<TEntity> ToCursor(CancellationToken cancellationToken = default)
         {
             return internalQueryable.ToCursor(cancellationToken);
@@ -134,22 +160,32 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return internalQueryable.ToCursorAsync(cancellationToken);
         }
 
-        public void Update(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateExpression)
+        public long Update(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression)
         {
-            UpdateDefinition<TEntity> updateDefinition = null;
+            var updateDefinition = GetUpdateDefinition(updateExpression);
+            var result = this.collection.UpdateOne<TEntity>(filter, updateDefinition);
+            return result.ModifiedCount;
+        }
 
-            var updateBuilder = Builders<TEntity>.Update;
+        public async Task<long> UpdateAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression)
+        {
+            var updateDefinition = GetUpdateDefinition(updateExpression);
+            var result = await this.collection.UpdateOneAsync<TEntity>(filter, updateDefinition);
+            return result.ModifiedCount;
+        }
 
-            var values = GetDictionaryFromExpression(updateExpression.Body);
+        public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression)
+        {
+            var updateDefinition = GetUpdateDefinition(updateExpression);
+            var result = this.collection.UpdateMany(filter, updateDefinition);
+            return result.ModifiedCount;
+        }
 
-            foreach (var kvp in values)
-            {
-                if (updateDefinition == null)
-                    updateDefinition = updateBuilder.Set(kvp.Key, kvp.Value);
-                else updateDefinition.Set(kvp.Key, kvp.Value);
-            }
-
-            this.collection.UpdateOne(filter, updateDefinition);
+        public async Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression)
+        {
+            var updateDefinition = GetUpdateDefinition(updateExpression);
+            var result = await this.collection.UpdateManyAsync(filter, updateDefinition);
+            return result.ModifiedCount;
         }
 
         private static void SetDictionaryValuesFromJToken(Dictionary<string, object> dict, JToken token, string prefix, bool explodeArray = true)
@@ -237,6 +273,22 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return new[] { IdKey };
         }
 
+        private UpdateDefinition<TEntity> GetUpdateDefinition(Expression<Func<TEntity>> updateExpression)
+        {
+            var values = GetDictionaryFromExpression(updateExpression.Body);
+
+            UpdateDefinition<TEntity> updateDefinition = null;
+            var updateBuilder = Builders<TEntity>.Update;
+
+            foreach (var kvp in values)
+            {
+                if (updateDefinition == null)
+                    updateDefinition = updateBuilder.Set(kvp.Key, kvp.Value);
+                else updateDefinition.Set(kvp.Key, kvp.Value);
+            }
+            return updateDefinition;
+        }
+
         private void SetDictionaryValuesFromExpression(Dictionary<string, object> dictionary, Expression expression, string prefix = "")
         {
             switch (expression)
@@ -274,6 +326,10 @@ namespace eQuantic.Core.Data.MongoDb.Repository
                     }
 
                     break;
+
+                default:
+
+                    throw new NotSupportedException();
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using eQuantic.Core.Data.MongoDb.Repository;
 using eQuantic.Core.Data.Repository;
 using MongoDB.Driver;
@@ -12,7 +13,16 @@ namespace eQuantic.Core.Data.MongoDb.Tests.Repository
         [Fact]
         public void Set_Update_Success()
         {
+            var updateResultMock = new Mock<UpdateResult>();
+
             var collectionMock = new Mock<IMongoCollection<EntityTest>>();
+            collectionMock.Setup(c =>
+                c.UpdateOne(
+                    It.IsAny<FilterDefinition<EntityTest>>(),
+                    It.IsAny<UpdateDefinition<EntityTest>>(),
+                    It.IsAny<UpdateOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(updateResultMock.Object);
 
             var databaseMock = new Mock<IMongoDatabase>();
             databaseMock
@@ -21,7 +31,7 @@ namespace eQuantic.Core.Data.MongoDb.Tests.Repository
 
             var set = new Set<EntityTest>(databaseMock.Object);
 
-            set.Update(o => o.Prop1 == 1, o => new EntityTest
+            set.Update(o => o.Prop1 == 1, () => new EntityTest
             {
                 Prop1 = 1,
                 Prop2 = "test",
@@ -43,7 +53,7 @@ namespace eQuantic.Core.Data.MongoDb.Tests.Repository
                 }
             };
 
-            set.Update(o => o.Prop1 == 1, o => entityTest);
+            set.Update(o => o.Prop1 == 1, () => entityTest);
         }
 
         public class EntityTest : IEntity
