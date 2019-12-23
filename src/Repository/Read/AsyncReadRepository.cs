@@ -1,27 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using eQuantic.Core.Data.Repository;
+using eQuantic.Core.Data.Repository.Read;
 using eQuantic.Core.Linq;
 using eQuantic.Core.Linq.Specification;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
-namespace eQuantic.Core.Data.MongoDb.Repository
+namespace eQuantic.Core.Data.MongoDb.Repository.Read
 {
-    public class AsyncRepository<TUnitOfWork, TEntity, TKey> : Repository<TUnitOfWork, TEntity, TKey>, IAsyncRepository<TUnitOfWork, TEntity, TKey>
+    public class AsyncReadRepository<TUnitOfWork, TEntity, TKey> : IAsyncReadRepository<TUnitOfWork, TEntity, TKey>
         where TUnitOfWork : IQueryableUnitOfWork
         where TEntity : class, IEntity, new()
     {
-        public AsyncRepository(TUnitOfWork unitOfWork) : base(unitOfWork)
+        private Set<TEntity> _dbSet = null;
+
+        /// <summary>
+        /// Create a new instance of repository
+        /// </summary>
+        /// <param name="unitOfWork">Associated Unit Of Work</param>
+        public AsyncReadRepository(TUnitOfWork unitOfWork)
         {
+            if (unitOfWork == null)
+                throw new ArgumentNullException(nameof(unitOfWork));
+
+            UnitOfWork = unitOfWork;
         }
 
-        public Task AddAsync(TEntity item)
-        {
-            throw new NotImplementedException();
-        }
+        /// <summary>
+        /// <see cref="eQuantic.Core.Data.Repository.Read.IReadRepository{TUnitOfWork, TEntity, TKey}"/>
+        /// </summary>
+        public TUnitOfWork UnitOfWork { get; private set; }
 
         public async Task<IEnumerable<TEntity>> AllMatchingAsync(ISpecification<TEntity> specification)
         {
@@ -43,19 +55,14 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return GetSet().LongCountAsync(filter);
         }
 
-        public Task<long> DeleteManyAsync(Expression<Func<TEntity, bool>> filter)
+        public void Dispose()
         {
-            throw new NotImplementedException();
+            UnitOfWork?.Dispose();
         }
 
-        public Task<long> DeleteManyAsync(ISpecification<TEntity> specification)
+        public async Task<IEnumerable<TEntity>> GetAllAsync()
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<TEntity>> GetAllAsync()
-        {
-            throw new NotImplementedException();
+            return await GetSet().ToListAsync();
         }
 
         public Task<IEnumerable<TEntity>> GetAllAsync(ISorting[] sortingColumns)
@@ -123,29 +130,9 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             throw new NotImplementedException();
         }
 
-        public Task MergeAsync(TEntity persisted, TEntity current)
+        protected Set<TEntity> GetSet()
         {
-            throw new NotImplementedException();
-        }
-
-        public Task ModifyAsync(TEntity item)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task RemoveAsync(TEntity item)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<long> UpdateManyAsync(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
-        {
-            throw new NotImplementedException();
+            return _dbSet ?? (_dbSet = (Set<TEntity>)UnitOfWork.CreateSet<TEntity>());
         }
     }
 }

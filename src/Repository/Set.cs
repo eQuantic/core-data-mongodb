@@ -39,9 +39,9 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             this.collection.DeleteOne(filter);
         }
 
-        public Task DeleteAsync(Expression<Func<TEntity, bool>> filter)
+        public Task DeleteAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default)
         {
-            return this.collection.DeleteOneAsync(filter);
+            return this.collection.DeleteOneAsync(filter, cancellationToken);
         }
 
         public long DeleteMany(Expression<Func<TEntity, bool>> filter)
@@ -50,15 +50,20 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return result.DeletedCount;
         }
 
-        public async Task<long> DeleteManyAsync(Expression<Func<TEntity, bool>> filter)
+        public async Task<long> DeleteManyAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default)
         {
-            var result = await this.collection.DeleteManyAsync(filter);
+            var result = await this.collection.DeleteManyAsync(filter, cancellationToken);
             return result.DeletedCount;
         }
 
         public IEnumerable<TEntity> Execute()
         {
             return internalQueryable.ToList();
+        }
+
+        public IFindFluent<TEntity, TEntity> Find(Expression<Func<TEntity, bool>> filter)
+        {
+            return this.collection.Find(filter);
         }
 
         public TEntity Find<TKey>(TKey key)
@@ -72,17 +77,17 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return this.collection.Find(filter).FirstOrDefault();
         }
 
-        public async Task<TEntity> FindAsync<TKey>(TKey key)
+        public async Task<TEntity> FindAsync<TKey>(TKey key, CancellationToken cancellationToken = default)
         {
             IAsyncCursor<TEntity> cursor;
             if (Convert.GetTypeCode(key) == TypeCode.Object)
             {
                 var expression = GetKeyExpression(key);
-                cursor = await this.collection.FindAsync(expression);
+                cursor = await this.collection.FindAsync(expression, null, cancellationToken);
                 return cursor.FirstOrDefault();
             }
             var filter = Builders<TEntity>.Filter.Eq(IdKey, ObjectId.Parse(key.ToString()));
-            cursor = await this.collection.FindAsync(filter);
+            cursor = await this.collection.FindAsync(filter, null, cancellationToken);
             return cursor.FirstOrDefault();
         }
 
@@ -145,9 +150,9 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             this.collection.InsertOne(item);
         }
 
-        public Task InsertAsync(TEntity item)
+        public Task InsertAsync(TEntity item, CancellationToken cancellationToken = default)
         {
-            return this.collection.InsertOneAsync(item);
+            return this.collection.InsertOneAsync(item, null, cancellationToken);
         }
 
         public IAsyncCursor<TEntity> ToCursor(CancellationToken cancellationToken = default)
@@ -167,10 +172,10 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return result.ModifiedCount;
         }
 
-        public async Task<long> UpdateAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression)
+        public async Task<long> UpdateAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression, CancellationToken cancellationToken = default)
         {
             var updateDefinition = GetUpdateDefinition(updateExpression);
-            var result = await this.collection.UpdateOneAsync<TEntity>(filter, updateDefinition);
+            var result = await this.collection.UpdateOneAsync<TEntity>(filter, updateDefinition, null, cancellationToken);
             return result.ModifiedCount;
         }
 
@@ -181,10 +186,10 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return result.ModifiedCount;
         }
 
-        public async Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression)
+        public async Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression, CancellationToken cancellationToken = default)
         {
             var updateDefinition = GetUpdateDefinition(updateExpression);
-            var result = await this.collection.UpdateManyAsync(filter, updateDefinition);
+            var result = await this.collection.UpdateManyAsync(filter, updateDefinition, null, cancellationToken);
             return result.ModifiedCount;
         }
 

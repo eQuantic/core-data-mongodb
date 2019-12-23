@@ -21,12 +21,12 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             GetSet().Insert(item);
         }
 
-        public int DeleteMany(Expression<Func<TEntity, bool>> filter)
+        public long DeleteMany(Expression<Func<TEntity, bool>> filter)
         {
-            return Convert.ToInt32(GetSet().DeleteMany(filter));
+            return GetSet().DeleteMany(filter);
         }
 
-        public int DeleteMany(ISpecification<TEntity> specification)
+        public long DeleteMany(ISpecification<TEntity> specification)
         {
             return DeleteMany(specification.SatisfiedBy());
         }
@@ -74,14 +74,13 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             if (item == (TEntity)null) return;
         }
 
-        public int UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
+        public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
         {
             var item = updateFactory.Compile()(null);
-            var result = GetSet().UpdateMany(filter, () => item);
-            return Convert.ToInt32(result);
+            return GetSet().UpdateMany(filter, () => item);
         }
 
-        public int UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
+        public long UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
         {
             return UpdateMany(specification.SatisfiedBy(), updateFactory);
         }
