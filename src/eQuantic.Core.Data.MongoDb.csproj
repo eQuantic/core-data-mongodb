@@ -10,6 +10,8 @@
     <PackageReleaseNotes>Entity ignorant persistance with Repository Pattern</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/eQuantic/core-data-mongodb</PackageProjectUrl>
     <PackageOutputPath>../artifacts/</PackageOutputPath>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
