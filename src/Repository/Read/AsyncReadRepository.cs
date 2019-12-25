@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Read;
 using eQuantic.Core.Linq;
+using eQuantic.Core.Linq.Extensions;
 using eQuantic.Core.Linq.Specification;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -31,7 +32,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
         }
 
         /// <summary>
-        /// <see cref="eQuantic.Core.Data.Repository.Read.IReadRepository{TUnitOfWork, TEntity, TKey}"/>
+        /// <see cref="eQuantic.Core.Data.Repository.Read.IAsyncReadRepository{TUnitOfWork, TEntity, TKey}"/>
         /// </summary>
         public TUnitOfWork UnitOfWork { get; private set; }
 
@@ -65,69 +66,97 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
             return await GetSet().ToListAsync();
         }
 
-        public Task<IEnumerable<TEntity>> GetAllAsync(ISorting[] sortingColumns)
+        public async Task<IEnumerable<TEntity>> GetAllAsync(ISorting[] sortingColumns)
         {
-            throw new NotImplementedException();
+            return await ((IOrderedMongoQueryable<TEntity>)GetSet().OrderBy(sortingColumns)).ToListAsync();
         }
 
         public Task<TEntity> GetAsync(TKey id)
         {
-            throw new NotImplementedException();
+            return GetSet().FindAsync(id);
         }
 
-        public Task<IEnumerable<TEntity>> GetFilteredAsync(Expression<Func<TEntity, bool>> filter)
+        public async Task<IEnumerable<TEntity>> GetFilteredAsync(Expression<Func<TEntity, bool>> filter)
         {
-            throw new NotImplementedException();
+            if (filter == null)
+                throw new ArgumentException("Filter expression cannot be null", nameof(filter));
+
+            return await GetSet().Where(filter).ToListAsync();
         }
 
-        public Task<IEnumerable<TEntity>> GetFilteredAsync(Expression<Func<TEntity, bool>> filter, ISorting[] sortColumns)
+        public async Task<IEnumerable<TEntity>> GetFilteredAsync(Expression<Func<TEntity, bool>> filter, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            if (filter == null)
+                throw new ArgumentException("Filter expression cannot be null", nameof(filter));
+
+            return await ((IOrderedMongoQueryable<TEntity>)GetSet().Where(filter).OrderBy(sortColumns)).ToListAsync();
         }
 
         public Task<TEntity> GetFirstAsync(Expression<Func<TEntity, bool>> filter)
         {
-            throw new NotImplementedException();
+            if (filter == null)
+                throw new ArgumentException("Filter expression cannot be null", nameof(filter));
+
+            return GetSet().FirstOrDefaultAsync(filter);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(int limit, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return GetPagedAsync((Expression<Func<TEntity, bool>>)null, 1, limit, sortColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(ISpecification<TEntity> specification, int limit, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return GetPagedAsync(specification.SatisfiedBy(), 1, limit, sortColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> filter, int limit, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return GetPagedAsync(filter, 1, limit, sortColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(int pageIndex, int pageCount, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return GetPagedAsync((Expression<Func<TEntity, bool>>)null, pageIndex, pageCount, sortColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(ISpecification<TEntity> specification, int pageIndex, int pageCount, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return GetPagedAsync(specification.SatisfiedBy(), pageIndex, pageCount, sortColumns);
         }
 
-        public Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, ISorting[] sortColumns)
+        public async Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            IMongoQueryable<TEntity> query = GetSet();
+            if (filter != null) query = query.Where(filter);
+
+            if (sortColumns != null && sortColumns.Length > 0)
+            {
+                query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(sortColumns);
+            }
+            if (pageCount > 0)
+            {
+                int skip = (pageIndex - 1) * pageCount;
+                return await query.Skip(skip).Take(pageCount).ToListAsync();
+            }
+
+            return await query.ToListAsync();
         }
 
         public Task<TEntity> GetSingleAsync(Expression<Func<TEntity, bool>> filter)
         {
-            throw new NotImplementedException();
+            if (filter == null)
+                throw new ArgumentException("Filter expression cannot be null", nameof(filter));
+
+            return GetSet().SingleOrDefaultAsync(filter);
         }
 
         public Task<TEntity> GetSingleAsync(Expression<Func<TEntity, bool>> filter, ISorting[] sortingColumns)
         {
-            throw new NotImplementedException();
+            if (filter == null)
+                throw new ArgumentException("Filter expression cannot be null", nameof(filter));
+
+            return ((IOrderedMongoQueryable<TEntity>)GetSet().OrderBy(sortingColumns)).SingleOrDefaultAsync(filter);
         }
 
         protected Set<TEntity> GetSet()

@@ -2,150 +2,172 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using eQuantic.Core.Data.MongoDb.Repository.Read;
+using eQuantic.Core.Data.MongoDb.Repository.Write;
 using eQuantic.Core.Data.Repository;
+using eQuantic.Core.Data.Repository.Read;
+using eQuantic.Core.Data.Repository.Write;
 using eQuantic.Core.Linq;
 using eQuantic.Core.Linq.Specification;
-using MongoDB.Driver;
-using MongoDB.Driver.Linq;
 
 namespace eQuantic.Core.Data.MongoDb.Repository
 {
-    public class AsyncRepository<TUnitOfWork, TEntity, TKey> : Repository<TUnitOfWork, TEntity, TKey>, IAsyncRepository<TUnitOfWork, TEntity, TKey>
+    public class AsyncRepository<TUnitOfWork, TEntity, TKey> : IAsyncRepository<TUnitOfWork, TEntity, TKey>
         where TUnitOfWork : IQueryableUnitOfWork
         where TEntity : class, IEntity, new()
     {
-        public AsyncRepository(TUnitOfWork unitOfWork) : base(unitOfWork)
+        private readonly IAsyncReadRepository<TUnitOfWork, TEntity, TKey> readRepository;
+        private readonly IAsyncWriteRepository<TUnitOfWork, TEntity, TKey> writeRepository;
+
+        public AsyncRepository(TUnitOfWork unitOfWork)
         {
+            if (unitOfWork == null)
+                throw new ArgumentNullException(nameof(unitOfWork));
+
+            UnitOfWork = unitOfWork;
+
+            readRepository = new AsyncReadRepository<TUnitOfWork, TEntity, TKey>(UnitOfWork);
+            writeRepository = new AsyncWriteRepository<TUnitOfWork, TEntity, TKey>(UnitOfWork);
         }
+
+        /// <summary>
+        /// <see cref="eQuantic.Core.Data.Repository.IAsyncRepository{TUnitOfWork, TEntity, TKey}"/>
+        /// </summary>
+        public TUnitOfWork UnitOfWork { get; private set; }
 
         public Task AddAsync(TEntity item)
         {
-            throw new NotImplementedException();
+            return writeRepository.AddAsync(item);
         }
 
-        public async Task<IEnumerable<TEntity>> AllMatchingAsync(ISpecification<TEntity> specification)
+        public Task<IEnumerable<TEntity>> AllMatchingAsync(ISpecification<TEntity> specification)
         {
-            return await GetSet().Where(specification.SatisfiedBy()).ToListAsync();
+            return readRepository.AllMatchingAsync(specification);
         }
 
         public Task<long> CountAsync()
         {
-            return GetSet().LongCountAsync();
+            return readRepository.CountAsync();
         }
 
         public Task<long> CountAsync(ISpecification<TEntity> specification)
         {
-            return CountAsync(specification.SatisfiedBy());
+            return readRepository.CountAsync(specification);
         }
 
         public Task<long> CountAsync(Expression<Func<TEntity, bool>> filter)
         {
-            return GetSet().LongCountAsync(filter);
+            return readRepository.CountAsync(filter);
         }
 
         public Task<long> DeleteManyAsync(Expression<Func<TEntity, bool>> filter)
         {
-            throw new NotImplementedException();
+            return writeRepository.DeleteManyAsync(filter);
         }
 
         public Task<long> DeleteManyAsync(ISpecification<TEntity> specification)
         {
-            throw new NotImplementedException();
+            return writeRepository.DeleteManyAsync(specification);
+        }
+
+        public void Dispose()
+        {
+            UnitOfWork?.Dispose();
         }
 
         public Task<IEnumerable<TEntity>> GetAllAsync()
         {
-            throw new NotImplementedException();
+            return readRepository.GetAllAsync();
         }
 
         public Task<IEnumerable<TEntity>> GetAllAsync(ISorting[] sortingColumns)
         {
-            throw new NotImplementedException();
+            return readRepository.GetAllAsync(sortingColumns);
         }
 
         public Task<TEntity> GetAsync(TKey id)
         {
-            throw new NotImplementedException();
+            return readRepository.GetAsync(id);
         }
 
         public Task<IEnumerable<TEntity>> GetFilteredAsync(Expression<Func<TEntity, bool>> filter)
         {
-            throw new NotImplementedException();
+            return readRepository.GetFilteredAsync(filter);
         }
 
         public Task<IEnumerable<TEntity>> GetFilteredAsync(Expression<Func<TEntity, bool>> filter, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return readRepository.GetFilteredAsync(filter, sortColumns);
         }
 
         public Task<TEntity> GetFirstAsync(Expression<Func<TEntity, bool>> filter)
         {
-            throw new NotImplementedException();
+            return readRepository.GetFirstAsync(filter);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(int limit, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return readRepository.GetPagedAsync(limit, sortColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(ISpecification<TEntity> specification, int limit, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return readRepository.GetPagedAsync(specification, limit, sortColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> filter, int limit, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return readRepository.GetPagedAsync(filter, limit, sortColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(int pageIndex, int pageCount, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return readRepository.GetPagedAsync(pageIndex, pageCount, sortColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(ISpecification<TEntity> specification, int pageIndex, int pageCount, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return readRepository.GetPagedAsync(specification, pageIndex, pageCount, sortColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, ISorting[] sortColumns)
         {
-            throw new NotImplementedException();
+            return readRepository.GetPagedAsync(filter, pageIndex, pageCount, sortColumns);
         }
 
         public Task<TEntity> GetSingleAsync(Expression<Func<TEntity, bool>> filter)
         {
-            throw new NotImplementedException();
+            return readRepository.GetSingleAsync(filter);
         }
 
         public Task<TEntity> GetSingleAsync(Expression<Func<TEntity, bool>> filter, ISorting[] sortingColumns)
         {
-            throw new NotImplementedException();
+            return readRepository.GetSingleAsync(filter, sortingColumns);
         }
 
         public Task MergeAsync(TEntity persisted, TEntity current)
         {
-            throw new NotImplementedException();
+            return writeRepository.MergeAsync(persisted, current);
         }
 
-        public Task ModifyAsync(TEntity item)
+        public async Task ModifyAsync(TEntity item)
         {
-            throw new NotImplementedException();
+            await writeRepository.ModifyAsync(item);
         }
 
-        public Task RemoveAsync(TEntity item)
+        public async Task RemoveAsync(TEntity item)
         {
-            throw new NotImplementedException();
+            await writeRepository.RemoveAsync(item);
         }
 
         public Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
         {
-            throw new NotImplementedException();
+            return writeRepository.UpdateManyAsync(filter, updateFactory);
         }
 
         public Task<long> UpdateManyAsync(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
         {
-            throw new NotImplementedException();
+            return writeRepository.UpdateManyAsync(specification, updateFactory);
         }
     }
 }

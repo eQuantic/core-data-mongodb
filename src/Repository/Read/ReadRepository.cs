@@ -7,6 +7,7 @@ using eQuantic.Core.Data.Repository.Read;
 using eQuantic.Core.Linq;
 using eQuantic.Core.Linq.Extensions;
 using eQuantic.Core.Linq.Specification;
+using MongoDB.Driver.Linq;
 
 namespace eQuantic.Core.Data.MongoDb.Repository.Read
 {
@@ -104,10 +105,10 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
             if (filter == null)
                 throw new ArgumentException("Filter expression cannot be null", nameof(filter));
 
-            IQueryable<TEntity> query = GetSet().Where(filter);
+            IMongoQueryable<TEntity> query = GetSet().Where(filter);
             if (sortColumns != null && sortColumns.Length > 0)
             {
-                query = (IQueryable<TEntity>)query.OrderBy(sortColumns);
+                query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(sortColumns);
             }
             return query;
         }
@@ -144,12 +145,12 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
 
         public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, ISorting[] sortColumns)
         {
-            IQueryable<TEntity> query = GetSet();
+            IMongoQueryable<TEntity> query = GetSet();
             if (filter != null) query = query.Where(filter);
 
             if (sortColumns != null && sortColumns.Length > 0)
             {
-                query = query.OrderBy(sortColumns);
+                query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(sortColumns);
             }
             if (pageCount > 0)
             {
@@ -162,6 +163,9 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
 
         public TEntity GetSingle(Expression<Func<TEntity, bool>> filter)
         {
+            if (filter == null)
+                throw new ArgumentException("Filter expression cannot be null", nameof(filter));
+
             return GetSet().FirstOrDefault(filter);
         }
 
