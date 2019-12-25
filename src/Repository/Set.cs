@@ -24,7 +24,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
 
         public Set(IMongoDatabase database)
         {
-            this.collection = database.GetCollection<TEntity>(nameof(TEntity));
+            this.collection = database.GetCollection<TEntity>(typeof(TEntity).Name);
             this.internalQueryable = collection.AsQueryable();
         }
 
