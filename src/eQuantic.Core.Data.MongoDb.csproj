@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.0.0.1-beta1</Version>
+    <Version>1.0.0.1-beta2</Version>
     <TargetFramework>netstandard2.0</TargetFramework>
 
     <PackageId>eQuantic.Core.Data.MongoDb</PackageId>

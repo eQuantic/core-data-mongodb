@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using eQuantic.Core.Data.Repository;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
@@ -18,7 +17,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
     public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEntity>
         where TEntity : class, IEntity, new()
     {
-        private const string IdKey = "id";
+        private const string IdKey = "_id";
         private readonly IMongoCollection<TEntity> collection;
         private readonly IMongoQueryable<TEntity> internalQueryable;
 
@@ -68,26 +67,26 @@ namespace eQuantic.Core.Data.MongoDb.Repository
 
         public TEntity Find<TKey>(TKey key)
         {
-            if (Convert.GetTypeCode(key) == TypeCode.Object)
-            {
-                var expression = GetKeyExpression(key);
-                return this.collection.Find(expression).FirstOrDefault();
-            }
-            var filter = Builders<TEntity>.Filter.Eq(IdKey, ObjectId.Parse(key.ToString()));
+            //if (Convert.GetTypeCode(key) == TypeCode.Object)
+            //{
+            //    var expression = GetKeyExpression(key);
+            //    return this.collection.Find(expression).FirstOrDefault();
+            //}
+            var filter = Builders<TEntity>.Filter.Eq(IdKey, key);
             return this.collection.Find(filter).FirstOrDefault();
         }
 
         public async Task<TEntity> FindAsync<TKey>(TKey key, CancellationToken cancellationToken = default)
         {
-            IAsyncCursor<TEntity> cursor;
-            if (Convert.GetTypeCode(key) == TypeCode.Object)
-            {
-                var expression = GetKeyExpression(key);
-                cursor = await this.collection.FindAsync(expression, null, cancellationToken);
-                return cursor.FirstOrDefault();
-            }
-            var filter = Builders<TEntity>.Filter.Eq(IdKey, ObjectId.Parse(key.ToString()));
-            cursor = await this.collection.FindAsync(filter, null, cancellationToken);
+            //IAsyncCursor<TEntity> cursor;
+            //if (Convert.GetTypeCode(key) == TypeCode.Object)
+            //{
+            //    var expression = GetKeyExpression(key);
+            //    cursor = await this.collection.FindAsync(expression, null, cancellationToken);
+            //    return cursor.FirstOrDefault();
+            //}
+            var filter = Builders<TEntity>.Filter.Eq(IdKey, key);
+            var cursor = await this.collection.FindAsync(filter, null, cancellationToken);
             return cursor.FirstOrDefault();
         }
 
