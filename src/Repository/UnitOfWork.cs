@@ -1,63 +1,64 @@
 ﻿using System.Threading.Tasks;
 using eQuantic.Core.Data.Repository;
+using eQuantic.Core.Ioc;
 using MongoDB.Driver;
 
 namespace eQuantic.Core.Data.MongoDb.Repository
 {
     public class UnitOfWork : IQueryableUnitOfWork
     {
-        private IMongoClient client;
-        private IMongoDatabase database;
+        private readonly IContainer _container;
+        private readonly IMongoClient _client;
+        private readonly IMongoDatabase _database;
 
-        public UnitOfWork(string connectionString, string database)
+        public UnitOfWork(string connectionString, string database, IContainer container)
         {
-            this.client = new MongoClient(connectionString);
-            this.database = client.GetDatabase(database);
+            _container = container;
+            _client = new MongoClient(connectionString);
+            _database = _client.GetDatabase(database);
         }
 
         public int Commit()
         {
-            throw new System.NotImplementedException();
+            return 0;
         }
 
         public int CommitAndRefreshChanges()
         {
-            throw new System.NotImplementedException();
+            return 0;
         }
 
         public Task<int> CommitAndRefreshChangesAsync()
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(0);
         }
 
         public Task<int> CommitAsync()
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(0);
         }
 
         ISet<TEntity> IQueryableUnitOfWork.CreateSet<TEntity>()
         {
-            return new Set<TEntity>(this.database);
+            return new Set<TEntity>(_database);
         }
 
         public void Dispose()
         {
-            throw new System.NotImplementedException();
         }
 
         public TRepository GetRepository<TRepository>() where TRepository : IRepository
         {
-            throw new System.NotImplementedException();
+            return _container.Resolve<TRepository>();
         }
 
         public TRepository GetRepository<TRepository>(string name) where TRepository : IRepository
         {
-            throw new System.NotImplementedException();
+            return _container.Resolve<TRepository>(name);
         }
 
         public void RollbackChanges()
         {
-            throw new System.NotImplementedException();
         }
     }
 }
