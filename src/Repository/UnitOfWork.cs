@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Ioc;
 using MongoDB.Driver;
@@ -10,7 +13,8 @@ namespace eQuantic.Core.Data.MongoDb.Repository
         private readonly IContainer _container;
         private readonly IMongoClient _client;
         private readonly IMongoDatabase _database;
-
+        private Dictionary<Type,object> _sets = new Dictionary<Type,object>();
+        
         public UnitOfWork(string connectionString, string database, IContainer container)
         {
             _container = container;
@@ -38,13 +42,22 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return Task.FromResult(0);
         }
 
-        ISet<TEntity> IQueryableUnitOfWork.CreateSet<TEntity>()
+        Data.Repository.ISet<TEntity> IQueryableUnitOfWork.CreateSet<TEntity>()
         {
-            return new Set<TEntity>(_database);
+            var entityType = typeof(TEntity);
+
+            if(_sets.ContainsKey(entityType))
+            {
+                return (Data.Repository.ISet<TEntity>)_sets[entityType];
+            }
+            var set = new Set<TEntity>(_database);
+            _sets.Add(typeof(TEntity), set);
+            return set;
         }
 
         public void Dispose()
         {
+            _sets.Clear();
         }
 
         public TRepository GetRepository<TRepository>() where TRepository : IRepository
