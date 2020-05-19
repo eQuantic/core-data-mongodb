@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using eQuantic.Core.Data.Repository;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
@@ -72,7 +74,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             //    var expression = GetKeyExpression(key);
             //    return this.collection.Find(expression).FirstOrDefault();
             //}
-            var filter = Builders<TEntity>.Filter.Eq(IdKey, key);
+            var filter = Builders<TEntity>.Filter.Eq(IdKey, ParseKeyValue(key));
             return this.collection.Find(filter).FirstOrDefault();
         }
 
@@ -85,7 +87,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             //    cursor = await this.collection.FindAsync(expression, null, cancellationToken);
             //    return cursor.FirstOrDefault();
             //}
-            var filter = Builders<TEntity>.Filter.Eq(IdKey, key);
+            var filter = Builders<TEntity>.Filter.Eq(IdKey, ParseKeyValue(key));
             var cursor = await this.collection.FindAsync(filter, null, cancellationToken);
             return cursor.FirstOrDefault();
         }
@@ -225,6 +227,11 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             }
         }
 
+        private BsonClassMap GetClassMap()
+        {
+            return BsonClassMap.GetRegisteredClassMaps().FirstOrDefault(o => o.ClassType == typeof(TEntity));
+        }
+
         private Dictionary<string, object> GetDictionaryFromExpression(Expression expression)
         {
             var dictionary = new Dictionary<string, object>();
@@ -274,7 +281,8 @@ namespace eQuantic.Core.Data.MongoDb.Repository
                 var props = keyType.GetProperties();
                 return props.Select(p => p.Name);
             }
-            return new[] { IdKey };
+
+            return new[] { GetClassMap()?.IdMemberMap?.MemberInfo?.Name ?? IdKey };
         }
 
         private UpdateDefinition<TEntity> GetUpdateDefinition(Expression<Func<TEntity>> updateExpression)
@@ -291,6 +299,36 @@ namespace eQuantic.Core.Data.MongoDb.Repository
                 else updateDefinition.Set(kvp.Key, kvp.Value);
             }
             return updateDefinition;
+        }
+
+        private object ParseKeyValue<TKey>(TKey key)
+        {
+            var classMap = GetClassMap();
+
+            if (classMap == null)
+            {
+                return key;
+            }
+
+            object value = key;
+
+            if (Convert.GetTypeCode(key) != TypeCode.Object)
+            {
+                var memberType = classMap.IdMemberMap?.MemberType;
+                if (memberType != null && memberType != typeof(TKey))
+                {
+                    if (memberType == typeof(ObjectId))
+                    {
+                        value = ObjectId.Parse(key.ToString());
+                    }
+
+                    if (memberType == typeof(Guid))
+                    {
+                        value = Guid.Parse(key.ToString());
+                    }
+                }
+            }
+            return value;
         }
 
         private void SetDictionaryValuesFromExpression(Dictionary<string, object> dictionary, Expression expression, string prefix = "")
