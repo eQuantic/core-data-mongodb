@@ -8,6 +8,7 @@ using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Read;
 using eQuantic.Core.Data.Repository.Write;
 using eQuantic.Core.Linq;
+using eQuantic.Core.Linq.Sorter;
 using eQuantic.Core.Linq.Specification;
 
 namespace eQuantic.Core.Data.MongoDb.Repository
@@ -75,12 +76,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             UnitOfWork?.Dispose();
         }
 
-        public Task<IEnumerable<TEntity>> GetAllAsync()
-        {
-            return readRepository.GetAllAsync();
-        }
-
-        public Task<IEnumerable<TEntity>> GetAllAsync(ISorting[] sortingColumns)
+        public Task<IEnumerable<TEntity>> GetAllAsync(params ISorting[] sortingColumns)
         {
             return readRepository.GetAllAsync(sortingColumns);
         }
@@ -90,61 +86,60 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return readRepository.GetAsync(id);
         }
 
-        public Task<IEnumerable<TEntity>> GetFilteredAsync(Expression<Func<TEntity, bool>> filter)
-        {
-            return readRepository.GetFilteredAsync(filter);
-        }
-
-        public Task<IEnumerable<TEntity>> GetFilteredAsync(Expression<Func<TEntity, bool>> filter, ISorting[] sortColumns)
+        public Task<IEnumerable<TEntity>> GetFilteredAsync(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
         {
             return readRepository.GetFilteredAsync(filter, sortColumns);
         }
 
-        public Task<TEntity> GetFirstAsync(Expression<Func<TEntity, bool>> filter)
+        public Task<TEntity> GetFirstAsync(Expression<Func<TEntity, bool>> filter, params ISorting[] sortingColumns)
         {
-            return readRepository.GetFirstAsync(filter);
+            return readRepository.GetFirstAsync(filter, sortingColumns);
+        }
+        
+        public Task<TEntity> GetFirstAsync(ISpecification<TEntity> specification, params ISorting[] sortingColumns)
+        {
+            return readRepository.GetFirstAsync(specification, sortingColumns);
         }
 
-        public Task<IEnumerable<TEntity>> GetPagedAsync(int limit, ISorting[] sortColumns)
+        public Task<IEnumerable<TEntity>> GetPagedAsync(int limit, params ISorting[] sortColumns)
         {
             return readRepository.GetPagedAsync(limit, sortColumns);
         }
 
-        public Task<IEnumerable<TEntity>> GetPagedAsync(ISpecification<TEntity> specification, int limit, ISorting[] sortColumns)
+        public Task<IEnumerable<TEntity>> GetPagedAsync(ISpecification<TEntity> specification, int limit, params ISorting[] sortColumns)
         {
             return readRepository.GetPagedAsync(specification, limit, sortColumns);
         }
 
-        public Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> filter, int limit, ISorting[] sortColumns)
+        public Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> filter, int limit, params ISorting[] sortColumns)
         {
             return readRepository.GetPagedAsync(filter, limit, sortColumns);
         }
 
-        public Task<IEnumerable<TEntity>> GetPagedAsync(int pageIndex, int pageCount, ISorting[] sortColumns)
+        public Task<IEnumerable<TEntity>> GetPagedAsync(int pageIndex, int pageCount, params ISorting[] sortColumns)
         {
             return readRepository.GetPagedAsync(pageIndex, pageCount, sortColumns);
         }
 
-        public Task<IEnumerable<TEntity>> GetPagedAsync(ISpecification<TEntity> specification, int pageIndex, int pageCount, ISorting[] sortColumns)
+        public Task<IEnumerable<TEntity>> GetPagedAsync(ISpecification<TEntity> specification, int pageIndex, int pageCount, params ISorting[] sortColumns)
         {
             return readRepository.GetPagedAsync(specification, pageIndex, pageCount, sortColumns);
         }
 
-        public Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, ISorting[] sortColumns)
+        public Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, params ISorting[] sortColumns)
         {
             return readRepository.GetPagedAsync(filter, pageIndex, pageCount, sortColumns);
         }
+        
 
-        public Task<TEntity> GetSingleAsync(Expression<Func<TEntity, bool>> filter)
-        {
-            return readRepository.GetSingleAsync(filter);
-        }
-
-        public Task<TEntity> GetSingleAsync(Expression<Func<TEntity, bool>> filter, ISorting[] sortingColumns)
+        public Task<TEntity> GetSingleAsync(Expression<Func<TEntity, bool>> filter, params ISorting[] sortingColumns)
         {
             return readRepository.GetSingleAsync(filter, sortingColumns);
         }
-
+        public Task<TEntity> GetSingleAsync(ISpecification<TEntity> specification, params ISorting[] sortingColumns)
+        {
+            return readRepository.GetSingleAsync(specification, sortingColumns);
+        }
         public Task MergeAsync(TEntity persisted, TEntity current)
         {
             return writeRepository.MergeAsync(persisted, current);

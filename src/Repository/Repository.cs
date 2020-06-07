@@ -7,6 +7,7 @@ using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Read;
 using eQuantic.Core.Data.Repository.Write;
 using eQuantic.Core.Linq;
+using eQuantic.Core.Linq.Sorter;
 using eQuantic.Core.Linq.Specification;
 
 namespace eQuantic.Core.Data.MongoDb.Repository
@@ -38,10 +39,9 @@ namespace eQuantic.Core.Data.MongoDb.Repository
         {
             writeRepository.Add(item);
         }
-
-        public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification)
+        public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification, params ISorting[] sortingColumns)
         {
-            return readRepository.AllMatching(specification);
+            return readRepository.AllMatching(specification, sortingColumns);
         }
 
         public long Count()
@@ -79,66 +79,65 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return readRepository.Get(id);
         }
 
-        public IEnumerable<TEntity> GetAll()
-        {
-            return readRepository.GetAll();
-        }
-
-        public IEnumerable<TEntity> GetAll(ISorting[] sortingColumns)
+        public IEnumerable<TEntity> GetAll(params ISorting[] sortingColumns)
         {
             return readRepository.GetAll(sortingColumns);
         }
 
-        public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter)
-        {
-            return readRepository.GetFiltered(filter);
-        }
-
-        public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
         {
             return readRepository.GetFiltered(filter, sortColumns);
         }
 
-        public TEntity GetFirst(Expression<Func<TEntity, bool>> filter)
+        public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
         {
-            return readRepository.GetFirst(filter);
+            return readRepository.GetFirst(filter, sortColumns);
+        }
+        
+        public TEntity GetFirst(ISpecification<TEntity> specification, params ISorting[] sortColumns)
+        {
+            return readRepository.GetFirst(specification, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(int limit, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(int limit, params ISorting[] sortColumns)
         {
             return readRepository.GetPaged(limit, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, params ISorting[] sortColumns)
         {
             return readRepository.GetPaged(specification, limit, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, params ISorting[] sortColumns)
         {
             return readRepository.GetPaged(filter, limit, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(int pageIndex, int pageCount, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(int pageIndex, int pageCount, params ISorting[] sortColumns)
         {
             return readRepository.GetPaged(pageIndex, pageCount, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageCount, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageCount, params ISorting[] sortColumns)
         {
             return readRepository.GetPaged(specification, pageIndex, pageCount, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, params ISorting[] sortColumns)
         {
             return readRepository.GetPaged(filter, pageIndex, pageCount, sortColumns);
         }
 
-        public TEntity GetSingle(Expression<Func<TEntity, bool>> filter)
+        public TEntity GetSingle(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
         {
-            return readRepository.GetSingle(filter);
+            return readRepository.GetSingle(filter, sortColumns);
         }
 
+        public TEntity GetSingle(ISpecification<TEntity> specification, params ISorting[] sortColumns)
+        {
+            return readRepository.GetSingle(specification, sortColumns);
+        }
         public void Merge(TEntity persisted, TEntity current)
         {
             writeRepository.Merge(persisted, current);

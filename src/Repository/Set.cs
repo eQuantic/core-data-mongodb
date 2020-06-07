@@ -156,6 +156,17 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return this.collection.InsertOneAsync(item, null, cancellationToken);
         }
 
+        public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateExpression)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateExpression,
+            CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public IAsyncCursor<TEntity> ToCursor(CancellationToken cancellationToken = default)
         {
             return internalQueryable.ToCursor(cancellationToken);
