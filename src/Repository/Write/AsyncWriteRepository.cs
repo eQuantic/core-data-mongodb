@@ -95,8 +95,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Write
 
         public Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
         {
-            var item = updateFactory.Compile()(null);
-            return GetSet().UpdateManyAsync(filter, () => item);
+            return GetSet().UpdateManyAsync(filter, updateFactory);
         }
 
         public Task<long> UpdateManyAsync(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
@@ -106,7 +105,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Write
 
         protected Set<TEntity> GetSet()
         {
-            return _dbSet ?? (_dbSet = (Set<TEntity>)UnitOfWork.CreateSet<TEntity>());
+            return _dbSet ??= (Set<TEntity>)UnitOfWork.CreateSet<TEntity>();
         }
     }
 }

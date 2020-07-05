@@ -168,28 +168,28 @@ namespace eQuantic.Core.Data.MongoDb.Repository
 
         public long Update(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression)
         {
-            var updateDefinition = GetUpdateDefinition(updateExpression);
+            var updateDefinition = GetUpdateDefinition(updateExpression.Body);
             var result = this.collection.UpdateOne<TEntity>(filter, updateDefinition);
             return result.ModifiedCount;
         }
 
         public async Task<long> UpdateAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression, CancellationToken cancellationToken = default)
         {
-            var updateDefinition = GetUpdateDefinition(updateExpression);
+            var updateDefinition = GetUpdateDefinition(updateExpression.Body);
             var result = await this.collection.UpdateOneAsync<TEntity>(filter, updateDefinition, null, cancellationToken);
             return result.ModifiedCount;
         }
 
-        public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression)
+        public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateExpression)
         {
-            var updateDefinition = GetUpdateDefinition(updateExpression);
+            var updateDefinition = GetUpdateDefinition(updateExpression.Body);
             var result = this.collection.UpdateMany(filter, updateDefinition);
             return result.ModifiedCount;
         }
 
-        public async Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression, CancellationToken cancellationToken = default)
+        public async Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateExpression, CancellationToken cancellationToken = default)
         {
-            var updateDefinition = GetUpdateDefinition(updateExpression);
+            var updateDefinition = GetUpdateDefinition(updateExpression.Body);
             var result = await this.collection.UpdateManyAsync(filter, updateDefinition, null, cancellationToken);
             return result.ModifiedCount;
         }
@@ -285,9 +285,9 @@ namespace eQuantic.Core.Data.MongoDb.Repository
             return new[] { GetClassMap()?.IdMemberMap?.MemberInfo?.Name ?? IdKey };
         }
 
-        private UpdateDefinition<TEntity> GetUpdateDefinition(Expression<Func<TEntity>> updateExpression)
+        private UpdateDefinition<TEntity> GetUpdateDefinition(Expression updateExpression)
         {
-            var values = GetDictionaryFromExpression(updateExpression.Body);
+            var values = GetDictionaryFromExpression(updateExpression);
 
             UpdateDefinition<TEntity> updateDefinition = null;
             var updateBuilder = Builders<TEntity>.Update;

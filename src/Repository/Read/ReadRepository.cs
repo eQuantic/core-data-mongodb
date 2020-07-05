@@ -4,8 +4,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Read;
-using eQuantic.Core.Linq;
 using eQuantic.Core.Linq.Extensions;
+using eQuantic.Core.Linq.Sorter;
 using eQuantic.Core.Linq.Specification;
 using MongoDB.Driver.Linq;
 
@@ -34,9 +34,15 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
         /// </summary>
         public TUnitOfWork UnitOfWork { get; private set; }
 
-        public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification)
+        public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification, params ISorting[] sortingColumns)
         {
-            return GetSet().Where(specification.SatisfiedBy());
+            IMongoQueryable<TEntity> query = GetSet().Where(specification.SatisfiedBy());
+            if (sortingColumns != null && sortingColumns.Length > 0)
+            {
+                query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(sortingColumns);
+            }
+
+            return query;
         }
 
         /// <summary>
@@ -85,22 +91,17 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
             return id != null ? GetSet().Find(id) : null;
         }
 
-        public IEnumerable<TEntity> GetAll()
+        public IEnumerable<TEntity> GetAll(params ISorting[] sortingColumns)
         {
-            return GetSet().Execute();
+            IMongoQueryable<TEntity> query = GetSet();
+            if (sortingColumns != null && sortingColumns.Length > 0)
+            {
+                query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(sortingColumns);
+            }
+            return query.ToList();
         }
 
-        public IEnumerable<TEntity> GetAll(ISorting[] sortingColumns)
-        {
-            return GetSet().OrderBy(sortingColumns);
-        }
-
-        public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter)
-        {
-            return GetFiltered(filter, null);
-        }
-
-        public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
         {
             if (filter == null)
                 throw new ArgumentException("Filter expression cannot be null", nameof(filter));
@@ -113,37 +114,48 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
             return query;
         }
 
-        public TEntity GetFirst(Expression<Func<TEntity, bool>> filter)
+        public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
         {
-            return GetSet().FirstOrDefault(filter);
+            IMongoQueryable<TEntity> query = filter == null ? GetSet() : GetSet().Where(filter);
+            if (sortColumns != null && sortColumns.Length > 0)
+            {
+                query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(sortColumns);
+            }
+
+            return query.FirstOrDefault();
         }
 
-        public IEnumerable<TEntity> GetPaged(int limit, ISorting[] sortColumns)
+        public TEntity GetFirst(ISpecification<TEntity> specification, params ISorting[] sortColumns)
+        {
+            return GetFirst(specification.SatisfiedBy(), sortColumns);
+        }
+
+        public IEnumerable<TEntity> GetPaged(int limit, params ISorting[] sortColumns)
         {
             return GetPaged((Expression<Func<TEntity, bool>>)null, 1, limit, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, params ISorting[] sortColumns)
         {
             return GetPaged(specification.SatisfiedBy(), 1, limit, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, params ISorting[] sortColumns)
         {
             return GetPaged(filter, 1, limit, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(int pageIndex, int pageCount, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(int pageIndex, int pageCount, params ISorting[] sortColumns)
         {
             return GetPaged((Expression<Func<TEntity, bool>>)null, pageIndex, pageCount, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageCount, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageCount, params ISorting[] sortColumns)
         {
             return GetPaged(specification.SatisfiedBy(), pageIndex, pageCount, sortColumns);
         }
 
-        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, ISorting[] sortColumns)
+        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, params ISorting[] sortColumns)
         {
             IMongoQueryable<TEntity> query = GetSet();
             if (filter != null) query = query.Where(filter);
@@ -161,17 +173,28 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
             return query;
         }
 
-        public TEntity GetSingle(Expression<Func<TEntity, bool>> filter)
+        public TEntity GetSingle(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
         {
             if (filter == null)
                 throw new ArgumentException("Filter expression cannot be null", nameof(filter));
 
-            return GetSet().FirstOrDefault(filter);
+            IMongoQueryable<TEntity> query = GetSet().Where(filter);
+            if (sortColumns != null && sortColumns.Length > 0)
+            {
+                query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(sortColumns);
+            }
+
+            return query.SingleOrDefault();
+        }
+
+        public TEntity GetSingle(ISpecification<TEntity> specification, params ISorting[] sortColumns)
+        {
+            return GetSingle(specification.SatisfiedBy(), sortColumns);
         }
 
         protected Set<TEntity> GetSet()
         {
-            return _dbSet ?? (_dbSet = (Set<TEntity>)UnitOfWork.CreateSet<TEntity>());
+            return _dbSet ??= (Set<TEntity>)UnitOfWork.CreateSet<TEntity>();
         }
     }
 }

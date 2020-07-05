@@ -96,8 +96,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Write
 
         public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
         {
-            var item = updateFactory.Compile()(null);
-            return GetSet().UpdateMany(filter, () => item);
+            return GetSet().UpdateMany(filter, updateFactory);
         }
 
         public long UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
@@ -107,7 +106,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Write
 
         protected Set<TEntity> GetSet()
         {
-            return _dbSet ?? (_dbSet = (Set<TEntity>)UnitOfWork.CreateSet<TEntity>());
+            return _dbSet ??= (Set<TEntity>)UnitOfWork.CreateSet<TEntity>();
         }
     }
 }

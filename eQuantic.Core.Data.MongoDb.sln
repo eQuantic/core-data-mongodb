@@ -8,13 +8,14 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F72DED29-7BF7-4870-81B4-7AFE91270530}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		.github\workflows\dotnetcore.yml = .github\workflows\dotnetcore.yml
 		LICENSE = LICENSE
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "eQuantic.Core.Data.MongoDb", "src\eQuantic.Core.Data.MongoDb.csproj", "{78B2A404-6C73-48DD-AC38-0C47F3DF7D2A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.Core.Data.MongoDb.Tests", "tests\eQuantic.Core.Data.MongoDb.Tests\eQuantic.Core.Data.MongoDb.Tests.csproj", "{2ED540F9-E38F-46EB-8223-BCD81E4A471A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "eQuantic.Core.Data.MongoDb.Tests", "tests\eQuantic.Core.Data.MongoDb.Tests\eQuantic.Core.Data.MongoDb.Tests.csproj", "{2ED540F9-E38F-46EB-8223-BCD81E4A471A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A57D820D-62C0-4232-AC83-37848EBDDEF1}"
 EndProject
