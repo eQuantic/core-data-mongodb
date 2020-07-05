@@ -129,10 +129,6 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
         {
             return GetFirst(specification?.SatisfiedBy(), sortColumns);
         }
-        public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
-        {
-            return GetSet().OrderBy(sortColumns).FirstOrDefault(filter);
-        }
 
         public IEnumerable<TEntity> GetPaged(int limit, params ISorting[] sortColumns)
         {
