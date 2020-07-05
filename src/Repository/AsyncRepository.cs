@@ -139,7 +139,6 @@ namespace eQuantic.Core.Data.MongoDb.Repository
         {
             return readRepository.GetSingleAsync(specification, sortingColumns);
         }
-
         public Task MergeAsync(TEntity persisted, TEntity current)
         {
             return writeRepository.MergeAsync(persisted, current);

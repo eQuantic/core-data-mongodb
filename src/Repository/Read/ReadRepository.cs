@@ -127,7 +127,11 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
 
         public TEntity GetFirst(ISpecification<TEntity> specification, params ISorting[] sortColumns)
         {
-            return GetFirst(specification.SatisfiedBy(), sortColumns);
+            return GetFirst(specification?.SatisfiedBy(), sortColumns);
+        }
+        public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
+        {
+            return GetSet().OrderBy(sortColumns).FirstOrDefault(filter);
         }
 
         public IEnumerable<TEntity> GetPaged(int limit, params ISorting[] sortColumns)
@@ -189,6 +193,9 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
 
         public TEntity GetSingle(ISpecification<TEntity> specification, params ISorting[] sortColumns)
         {
+            if (specification == null)
+                throw new ArgumentException("The specification cannot be null", nameof(specification));
+
             return GetSingle(specification.SatisfiedBy(), sortColumns);
         }
 

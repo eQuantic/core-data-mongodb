@@ -38,7 +38,9 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
 
         public async Task<IEnumerable<TEntity>> AllMatchingAsync(ISpecification<TEntity> specification)
         {
-            return await GetSet().Where(specification.SatisfiedBy()).ToListAsync();
+            IMongoQueryable<TEntity> query = GetSet().Where(specification.SatisfiedBy());
+
+            return await query.ToListAsync();
         }
 
         public Task<long> CountAsync()
@@ -105,7 +107,7 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
 
         public Task<TEntity> GetFirstAsync(ISpecification<TEntity> specification, params ISorting[] sortingColumns)
         {
-            return GetFirstAsync(specification.SatisfiedBy(), sortingColumns);
+            return GetFirstAsync(specification?.SatisfiedBy(), sortingColumns);
         }
 
         public Task<IEnumerable<TEntity>> GetPagedAsync(int limit, params ISorting[] sortColumns)
@@ -167,6 +169,8 @@ namespace eQuantic.Core.Data.MongoDb.Repository.Read
 
         public Task<TEntity> GetSingleAsync(ISpecification<TEntity> specification, params ISorting[] sortingColumns)
         {
+            if (specification == null)
+                throw new ArgumentException("The specification cannot be null", nameof(specification));
             return GetSingleAsync(specification.SatisfiedBy(), sortingColumns);
         }
 
