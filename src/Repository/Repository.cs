@@ -4,169 +4,228 @@ using System.Linq.Expressions;
 using eQuantic.Core.Data.MongoDb.Repository.Read;
 using eQuantic.Core.Data.MongoDb.Repository.Write;
 using eQuantic.Core.Data.Repository;
+using eQuantic.Core.Data.Repository.Config;
 using eQuantic.Core.Data.Repository.Read;
 using eQuantic.Core.Data.Repository.Write;
-using eQuantic.Core.Linq.Sorter;
-using eQuantic.Core.Linq.Specification;
+using eQuantic.Linq.Specification;
 
-namespace eQuantic.Core.Data.MongoDb.Repository
+namespace eQuantic.Core.Data.MongoDb.Repository;
+
+public class Repository<TUnitOfWork, TEntity, TKey> : IRepository<TUnitOfWork, TEntity, TKey>
+    where TUnitOfWork : Configuration<TEntity>, IQueryableUnitOfWork
+    where TEntity : class, IEntity, new()
 {
-    public class Repository<TUnitOfWork, TEntity, TKey> : IRepository<TUnitOfWork, TEntity, TKey>
-        where TUnitOfWork : IQueryableUnitOfWork
-        where TEntity : class, IEntity, new()
+    private readonly IReadRepository<TUnitOfWork, TEntity, TKey> _readRepository;
+    private readonly IWriteRepository<TUnitOfWork, TEntity> _writeRepository;
+
+    public Repository(TUnitOfWork unitOfWork)
     {
-        private readonly IReadRepository<TUnitOfWork, TEntity, TKey> readRepository;
-        private readonly IWriteRepository<TUnitOfWork, TEntity, TKey> writeRepository;
+        if (unitOfWork == null)
+            throw new ArgumentNullException(nameof(unitOfWork));
 
-        public Repository(TUnitOfWork unitOfWork)
-        {
-            if (unitOfWork == null)
-                throw new ArgumentNullException(nameof(unitOfWork));
+        UnitOfWork = unitOfWork;
 
-            UnitOfWork = unitOfWork;
+        _readRepository = new ReadRepository<TUnitOfWork, TEntity, TKey>(UnitOfWork);
+        _writeRepository = new WriteRepository<TUnitOfWork, TEntity, TKey>(UnitOfWork);
+    }
 
-            readRepository = new ReadRepository<TUnitOfWork, TEntity, TKey>(UnitOfWork);
-            writeRepository = new WriteRepository<TUnitOfWork, TEntity, TKey>(UnitOfWork);
-        }
+    /// <summary>
+    /// <see cref="eQuantic.Core.Data.Repository.IRepository{TUnitOfWork, TEntity, TKey}"/>
+    /// </summary>
+    public TUnitOfWork UnitOfWork { get; private set; }
 
-        /// <summary>
-        /// <see cref="eQuantic.Core.Data.Repository.IRepository{TUnitOfWork, TEntity, TKey}"/>
-        /// </summary>
-        public TUnitOfWork UnitOfWork { get; private set; }
+    public void Add(TEntity item)
+    {
+        _writeRepository.Add(item);
+    }
 
-        public void Add(TEntity item)
-        {
-            writeRepository.Add(item);
-        }
+    public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.AllMatching(specification, configuration);
+    }
 
-        public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification, params ISorting[] sortingColumns)
-        {
-            return readRepository.AllMatching(specification, sortingColumns);
-        }
+    public long Count()
+    {
+        return _readRepository.Count();
+    }
 
-        public long Count()
-        {
-            return readRepository.Count();
-        }
+    long IReadRepository<Configuration<TEntity>, TEntity, TKey>.Count(ISpecification<TEntity> specification)
+    {
+        return Count(specification);
+    }
 
-        public long Count(ISpecification<TEntity> specification)
-        {
-            return readRepository.Count(specification);
-        }
+    public long Count(ISpecification<TEntity> specification)
+    {
+        return _readRepository.Count(specification);
+    }
 
-        public long Count(Expression<Func<TEntity, bool>> filter)
-        {
-            return readRepository.Count(filter);
-        }
+    public long Count(Expression<Func<TEntity, bool>> filter)
+    {
+        return _readRepository.Count(filter);
+    }
 
-        public long DeleteMany(Expression<Func<TEntity, bool>> filter)
-        {
-            return writeRepository.DeleteMany(filter);
-        }
+    public bool All(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.All(specification, configuration);
+    }
 
-        public long DeleteMany(ISpecification<TEntity> specification)
-        {
-            return writeRepository.DeleteMany(specification);
-        }
+    public bool All(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.All(filter, configuration);
+    }
 
-        public void Dispose()
-        {
-            UnitOfWork?.Dispose();
-        }
+    public bool Any(Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.Any(configuration);
+    }
 
-        public TEntity Get(TKey id)
-        {
-            return readRepository.Get(id);
-        }
+    public bool Any(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.Any(specification, configuration);
+    }
 
-        public IEnumerable<TEntity> GetAll(params ISorting[] sortingColumns)
-        {
-            return readRepository.GetAll(sortingColumns);
-        }
+    public bool Any(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.Any(filter, configuration);
+    }
 
-        public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
-        {
-            return readRepository.GetFiltered(filter, sortColumns);
-        }
+    public TEntity Get(TKey id, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.Get(id, configuration);
+    }
 
-        public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
-        {
-            return readRepository.GetFirst(filter, sortColumns);
-        }
+    public IEnumerable<TEntity> GetAll(Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetAll(configuration);
+    }
 
-        public TEntity GetFirst(ISpecification<TEntity> specification, params ISorting[] sortColumns)
-        {
-            return readRepository.GetFirst(specification, sortColumns);
-        }
+    public IEnumerable<TResult> GetMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetMapped(filter, map, configuration);
+    }
 
-        public IEnumerable<TEntity> GetPaged(int limit, params ISorting[] sortColumns)
-        {
-            return readRepository.GetPaged(limit, sortColumns);
-        }
+    public IEnumerable<TResult> GetMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetMapped(specification, map, configuration);
+    }
 
-        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, params ISorting[] sortColumns)
-        {
-            return readRepository.GetPaged(specification, limit, sortColumns);
-        }
+    public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetFiltered(filter, configuration);
+    }
 
-        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, params ISorting[] sortColumns)
-        {
-            return readRepository.GetPaged(filter, limit, sortColumns);
-        }
+    public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetFirst(filter, configuration);
+    }
 
-        public IEnumerable<TEntity> GetPaged(int pageIndex, int pageCount, params ISorting[] sortColumns)
-        {
-            return readRepository.GetPaged(pageIndex, pageCount, sortColumns);
-        }
+    public TEntity GetFirst(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetFirst(specification, configuration);
+    }
 
-        public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageCount, params ISorting[] sortColumns)
-        {
-            return readRepository.GetPaged(specification, pageIndex, pageCount, sortColumns);
-        }
+    public TResult GetFirstMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetFirstMapped(filter, map, configuration);
+    }
 
-        public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageCount, params ISorting[] sortColumns)
-        {
-            return readRepository.GetPaged(filter, pageIndex, pageCount, sortColumns);
-        }
+    public TResult GetFirstMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetFirstMapped(specification, map, configuration);
+    }
 
-        public TEntity GetSingle(Expression<Func<TEntity, bool>> filter, params ISorting[] sortColumns)
-        {
-            return readRepository.GetSingle(filter, sortColumns);
-        }
+    public IEnumerable<TEntity> GetPaged(int limit, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetPaged(limit, configuration);
+    }
 
-        public TEntity GetSingle(ISpecification<TEntity> specification, params ISorting[] sortColumns)
-        {
-            return readRepository.GetSingle(specification, sortColumns);
-        }
+    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetPaged(specification, limit, configuration);
+    }
 
-        public void Merge(TEntity persisted, TEntity current)
-        {
-            writeRepository.Merge(persisted, current);
-        }
+    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetPaged(filter, limit, configuration);
+    }
 
-        public void Modify(TEntity item)
-        {
-            writeRepository.Modify(item);
-        }
+    public IEnumerable<TEntity> GetPaged(int pageIndex, int pageSize, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetPaged(pageIndex, pageSize, configuration);
+    }
 
-        public void Remove(TEntity item)
-        {
-            writeRepository.Remove(item);
-        }
+    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageSize, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetPaged(specification, pageIndex, pageSize, configuration);
+    }
 
-        public void TrackItem(TEntity item)
-        {
-            writeRepository.TrackItem(item);
-        }
+    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageSize, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetPaged(filter, pageIndex, pageSize, configuration);
+    }
 
-        public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
-        {
-            return writeRepository.UpdateMany(filter, updateFactory);
-        }
+    public TEntity GetSingle(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetSingle(filter, configuration);
+    }
 
-        public long UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
-        {
-            return writeRepository.UpdateMany(specification, updateFactory);
-        }
+    public TEntity GetSingle(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    {
+        return _readRepository.GetSingle(specification, configuration);
+    }
+
+    public long DeleteMany(Expression<Func<TEntity, bool>> filter)
+    {
+        return _writeRepository.DeleteMany(filter);
+    }
+
+    long IWriteRepository<TEntity>.DeleteMany(ISpecification<TEntity> specification)
+    {
+        return DeleteMany(specification);
+    }
+
+    public long DeleteMany(ISpecification<TEntity> specification)
+    {
+        return _writeRepository.DeleteMany(specification);
+    }
+
+    public void Dispose()
+    {
+        UnitOfWork?.Dispose();
+    }
+
+    public void Merge(TEntity persisted, TEntity current)
+    {
+        _writeRepository.Merge(persisted, current);
+    }
+
+    public void Modify(TEntity item)
+    {
+        _writeRepository.Modify(item);
+    }
+
+    public void Remove(TEntity item)
+    {
+        _writeRepository.Remove(item);
+    }
+
+    public void TrackItem(TEntity item)
+    {
+        _writeRepository.TrackItem(item);
+    }
+
+    public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
+    {
+        return _writeRepository.UpdateMany(filter, updateFactory);
+    }
+
+    long IWriteRepository<TEntity>.UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
+    {
+        return UpdateMany(specification, updateFactory);
+    }
+
+    public long UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
+    {
+        return _writeRepository.UpdateMany(specification, updateFactory);
     }
 }

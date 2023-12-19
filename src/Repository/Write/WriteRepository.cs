@@ -4,109 +4,113 @@ using System.Linq.Expressions;
 using System.Reflection;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Write;
-using eQuantic.Core.Linq.Specification;
+using eQuantic.Linq.Specification;
 
-namespace eQuantic.Core.Data.MongoDb.Repository.Write
+namespace eQuantic.Core.Data.MongoDb.Repository.Write;
+
+public class WriteRepository<TUnitOfWork, TEntity, TKey> : IWriteRepository<TUnitOfWork, TEntity>
+    where TUnitOfWork : IQueryableUnitOfWork
+    where TEntity : class, IEntity, new()
 {
-    public class WriteRepository<TUnitOfWork, TEntity, TKey> : IWriteRepository<TUnitOfWork, TEntity, TKey>
-        where TUnitOfWork : IQueryableUnitOfWork
-        where TEntity : class, IEntity, new()
+    private Set<TEntity> _dbSet = null;
+
+    /// <summary>
+    /// Create a new instance of write repository
+    /// </summary>
+    /// <param name="unitOfWork">Associated Unit Of Work</param>
+    public WriteRepository(TUnitOfWork unitOfWork)
     {
-        private Set<TEntity> _dbSet = null;
+        if (unitOfWork == null)
+            throw new ArgumentNullException(nameof(unitOfWork));
 
-        /// <summary>
-        /// Create a new instance of write repository
-        /// </summary>
-        /// <param name="unitOfWork">Associated Unit Of Work</param>
-        public WriteRepository(TUnitOfWork unitOfWork)
+        UnitOfWork = unitOfWork;
+    }
+
+    /// <summary>
+    /// <see cref="eQuantic.Core.Data.Repository.Read.IWriteRepository{TUnitOfWork, TEntity, TKey}"/>
+    /// </summary>
+    public TUnitOfWork UnitOfWork { get; private set; }
+
+    public void Add(TEntity item)
+    {
+        GetSet().Insert(item);
+    }
+
+    public long DeleteMany(Expression<Func<TEntity, bool>> filter)
+    {
+        return GetSet().DeleteMany(filter);
+    }
+
+    public long DeleteMany(ISpecification<TEntity> specification)
+    {
+        return DeleteMany(specification.SatisfiedBy());
+    }
+
+    public void Dispose()
+    {
+        UnitOfWork?.Dispose();
+    }
+
+    public void Merge(TEntity persisted, TEntity current)
+    {
+        var entityType = typeof(TEntity);
+
+        var properties = entityType.GetTypeInfo().GetProperties()
+            .Where(prop => prop.CanRead && prop.CanWrite);
+
+        foreach (var prop in properties)
         {
-            if (unitOfWork == null)
-                throw new ArgumentNullException(nameof(unitOfWork));
-
-            UnitOfWork = unitOfWork;
+            var value = prop.GetValue(current, null);
+            if (value != null)
+                prop.SetValue(persisted, value, null);
         }
 
-        /// <summary>
-        /// <see cref="eQuantic.Core.Data.Repository.Read.IWriteRepository{TUnitOfWork, TEntity, TKey}"/>
-        /// </summary>
-        public TUnitOfWork UnitOfWork { get; private set; }
+        var key = GetSet().GetKeyValue<TKey>(persisted);
+        var expression = GetSet().GetKeyExpression(key);
 
-        public void Add(TEntity item)
-        {
-            GetSet().Insert(item);
-        }
+        GetSet().Update(expression, () => persisted);
+    }
 
-        public long DeleteMany(Expression<Func<TEntity, bool>> filter)
-        {
-            return GetSet().DeleteMany(filter);
-        }
+    public void Modify(TEntity item)
+    {
+        if (item == (TEntity)null) return;
 
-        public long DeleteMany(ISpecification<TEntity> specification)
-        {
-            return DeleteMany(specification.SatisfiedBy());
-        }
+        var key = GetSet().GetKeyValue<TKey>(item);
+        var expression = GetSet().GetKeyExpression(key);
 
-        public void Dispose()
-        {
-            UnitOfWork?.Dispose();
-        }
+        GetSet().Update(expression, () => item);
+    }
 
-        public void Merge(TEntity persisted, TEntity current)
-        {
-            var entityType = typeof(TEntity);
+    public void Remove(TEntity item)
+    {
+        var key = GetSet().GetKeyValue<TKey>(item);
+        var expression = GetSet().GetKeyExpression(key);
 
-            var properties = entityType.GetTypeInfo().GetProperties()
-                .Where(prop => prop.CanRead && prop.CanWrite);
+        GetSet().Delete(expression);
+    }
 
-            foreach (var prop in properties)
-            {
-                var value = prop.GetValue(current, null);
-                if (value != null)
-                    prop.SetValue(persisted, value, null);
-            }
+    public void TrackItem(TEntity item)
+    {
+        if (item == (TEntity)null) return;
+    }
 
-            var key = GetSet().GetKeyValue<TKey>(persisted);
-            var expression = GetSet().GetKeyExpression(key);
+    public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
+    {
+        return GetSet().UpdateMany(filter, updateFactory);
+    }
 
-            GetSet().Update(expression, () => persisted);
-        }
+    long IWriteRepository<TEntity>.UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
+    {
+        return UpdateMany(specification, updateFactory);
+    }
 
-        public void Modify(TEntity item)
-        {
-            if (item == (TEntity)null) return;
+    public long UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
+    {
+        return UpdateMany(specification.SatisfiedBy(), updateFactory);
+    }
 
-            var key = GetSet().GetKeyValue<TKey>(item);
-            var expression = GetSet().GetKeyExpression(key);
-
-            GetSet().Update(expression, () => item);
-        }
-
-        public void Remove(TEntity item)
-        {
-            var key = GetSet().GetKeyValue<TKey>(item);
-            var expression = GetSet().GetKeyExpression(key);
-
-            GetSet().Delete(expression);
-        }
-
-        public void TrackItem(TEntity item)
-        {
-            if (item == (TEntity)null) return;
-        }
-
-        public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateFactory)
-        {
-            return GetSet().UpdateMany(filter, updateFactory);
-        }
-
-        public long UpdateMany(ISpecification<TEntity> specification, Expression<Func<TEntity, TEntity>> updateFactory)
-        {
-            return UpdateMany(specification.SatisfiedBy(), updateFactory);
-        }
-
-        protected Set<TEntity> GetSet()
-        {
-            return _dbSet ??= (Set<TEntity>)UnitOfWork.CreateSet<TEntity>();
-        }
+    protected Set<TEntity> GetSet()
+    {
+        return _dbSet ??= (Set<TEntity>)UnitOfWork.CreateSet<TEntity>();
     }
 }
