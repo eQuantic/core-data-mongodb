@@ -11,21 +11,22 @@ using eQuantic.Linq.Specification;
 
 namespace eQuantic.Core.Data.MongoDb.Repository;
 
-public class Repository<TUnitOfWork, TEntity, TKey> : IRepository<TUnitOfWork, TEntity, TKey>
-    where TUnitOfWork : Configuration<TEntity>, IQueryableUnitOfWork
+public class QueryableRepository<TUnitOfWork, TEntity, TKey> : 
+    IQueryableRepository<TUnitOfWork, TEntity, TKey>
+    where TUnitOfWork : IQueryableUnitOfWork
     where TEntity : class, IEntity, new()
 {
-    private readonly IReadRepository<TUnitOfWork, TEntity, TKey> _readRepository;
+    private readonly IQueryableReadRepository<TUnitOfWork, TEntity, TKey> _readRepository;
     private readonly IWriteRepository<TUnitOfWork, TEntity> _writeRepository;
 
-    public Repository(TUnitOfWork unitOfWork)
+    public QueryableRepository(TUnitOfWork unitOfWork)
     {
         if (unitOfWork == null)
             throw new ArgumentNullException(nameof(unitOfWork));
 
         UnitOfWork = unitOfWork;
 
-        _readRepository = new ReadRepository<TUnitOfWork, TEntity, TKey>(UnitOfWork);
+        _readRepository = new QueryableReadRepository<TUnitOfWork, TEntity, TKey>(UnitOfWork);
         _writeRepository = new WriteRepository<TUnitOfWork, TEntity, TKey>(UnitOfWork);
     }
 
@@ -39,7 +40,7 @@ public class Repository<TUnitOfWork, TEntity, TKey> : IRepository<TUnitOfWork, T
         _writeRepository.Add(item);
     }
 
-    public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.AllMatching(specification, configuration);
     }
@@ -49,7 +50,7 @@ public class Repository<TUnitOfWork, TEntity, TKey> : IRepository<TUnitOfWork, T
         return _readRepository.Count();
     }
 
-    long IReadRepository<Configuration<TEntity>, TEntity, TKey>.Count(ISpecification<TEntity> specification)
+    long IReadRepository<QueryableConfiguration<TEntity>, TEntity, TKey>.Count(ISpecification<TEntity> specification)
     {
         return Count(specification);
     }
@@ -64,112 +65,112 @@ public class Repository<TUnitOfWork, TEntity, TKey> : IRepository<TUnitOfWork, T
         return _readRepository.Count(filter);
     }
 
-    public bool All(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    public bool All(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.All(specification, configuration);
     }
 
-    public bool All(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    public bool All(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.All(filter, configuration);
     }
 
-    public bool Any(Action<Configuration<TEntity>> configuration = null)
+    public bool Any(Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.Any(configuration);
     }
 
-    public bool Any(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    public bool Any(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.Any(specification, configuration);
     }
 
-    public bool Any(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    public bool Any(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.Any(filter, configuration);
     }
 
-    public TEntity Get(TKey id, Action<Configuration<TEntity>> configuration = null)
+    public TEntity Get(TKey id, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.Get(id, configuration);
     }
 
-    public IEnumerable<TEntity> GetAll(Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TEntity> GetAll(Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetAll(configuration);
     }
 
-    public IEnumerable<TResult> GetMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TResult> GetMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetMapped(filter, map, configuration);
     }
 
-    public IEnumerable<TResult> GetMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TResult> GetMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetMapped(specification, map, configuration);
     }
 
-    public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetFiltered(filter, configuration);
     }
 
-    public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetFirst(filter, configuration);
     }
 
-    public TEntity GetFirst(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    public TEntity GetFirst(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetFirst(specification, configuration);
     }
 
-    public TResult GetFirstMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<Configuration<TEntity>> configuration = null)
+    public TResult GetFirstMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetFirstMapped(filter, map, configuration);
     }
 
-    public TResult GetFirstMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<Configuration<TEntity>> configuration = null)
+    public TResult GetFirstMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetFirstMapped(specification, map, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(int limit, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TEntity> GetPaged(int limit, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetPaged(limit, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetPaged(specification, limit, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetPaged(filter, limit, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(int pageIndex, int pageSize, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TEntity> GetPaged(int pageIndex, int pageSize, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetPaged(pageIndex, pageSize, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageSize, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageSize, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetPaged(specification, pageIndex, pageSize, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageSize, Action<Configuration<TEntity>> configuration = null)
+    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageSize, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetPaged(filter, pageIndex, pageSize, configuration);
     }
 
-    public TEntity GetSingle(Expression<Func<TEntity, bool>> filter, Action<Configuration<TEntity>> configuration = null)
+    public TEntity GetSingle(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetSingle(filter, configuration);
     }
 
-    public TEntity GetSingle(ISpecification<TEntity> specification, Action<Configuration<TEntity>> configuration = null)
+    public TEntity GetSingle(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return _readRepository.GetSingle(specification, configuration);
     }

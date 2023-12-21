@@ -1,25 +1,22 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Options;
-using eQuantic.Core.Ioc;
 using MongoDB.Driver;
 
 namespace eQuantic.Core.Data.MongoDb.Repository;
 
 public class UnitOfWork : IQueryableUnitOfWork
 {
-    private readonly IMongoClient _client;
     private readonly IMongoDatabase _database;
     private readonly Dictionary<Type,object> _sets = new();
         
-    public UnitOfWork(string connectionString, string database)
+    public UnitOfWork(MongoOptions options)
     {
-        _client = new MongoClient(connectionString);
-        _database = _client.GetDatabase(database);
+        IMongoClient client = new MongoClient(options.ConnectionString);
+        _database = client.GetDatabase(options.Database);
     }
 
     public int Commit()
@@ -75,6 +72,16 @@ public class UnitOfWork : IQueryableUnitOfWork
         return set;
     }
 
+    public IQueryableRepository<TUnitOfWork, TEntity, TKey> GetQueryableRepository<TUnitOfWork, TEntity, TKey>() where TUnitOfWork : IQueryableUnitOfWork where TEntity : class, IEntity, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IAsyncQueryableRepository<TUnitOfWork, TEntity, TKey> GetAsyncQueryableRepository<TUnitOfWork, TEntity, TKey>() where TUnitOfWork : IQueryableUnitOfWork where TEntity : class, IEntity, new()
+    {
+        throw new NotImplementedException();
+    }
+
     public void Dispose()
     {
         _sets.Clear();
@@ -82,5 +89,15 @@ public class UnitOfWork : IQueryableUnitOfWork
 
     public void RollbackChanges()
     {
+    }
+
+    public IRepository<TUnitOfWork, TEntity, TKey> GetRepository<TUnitOfWork, TEntity, TKey>() where TUnitOfWork : IUnitOfWork where TEntity : class, IEntity, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IAsyncRepository<TUnitOfWork, TEntity, TKey> GetAsyncRepository<TUnitOfWork, TEntity, TKey>() where TUnitOfWork : IUnitOfWork where TEntity : class, IEntity, new()
+    {
+        throw new NotImplementedException();
     }
 }

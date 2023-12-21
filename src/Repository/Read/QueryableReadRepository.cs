@@ -11,8 +11,9 @@ using MongoDB.Driver.Linq;
 
 namespace eQuantic.Core.Data.MongoDb.Repository.Read;
 
-public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitOfWork, TEntity, TKey>
-    where TUnitOfWork : Configuration<TEntity>, IQueryableUnitOfWork
+public class QueryableReadRepository<TUnitOfWork, TEntity, TKey> : 
+    IQueryableReadRepository<TUnitOfWork, TEntity, TKey>
+    where TUnitOfWork : IQueryableUnitOfWork
     where TEntity : class, IEntity, new()
 {
     private Set<TEntity> _dbSet = null;
@@ -21,7 +22,7 @@ public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitO
     /// Create a new instance of repository
     /// </summary>
     /// <param name="unitOfWork">Associated Unit Of Work</param>
-    public ReadRepository(TUnitOfWork unitOfWork)
+    public QueryableReadRepository(TUnitOfWork unitOfWork)
     {
         if (unitOfWork == null)
             throw new ArgumentNullException(nameof(unitOfWork));
@@ -34,7 +35,7 @@ public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitO
     /// </summary>
     public TUnitOfWork UnitOfWork { get; private set; }
 
-    public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TEntity> AllMatching(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         IMongoQueryable<TEntity> query = GetSet().Where(specification.SatisfiedBy());
         var config = Set<TEntity>.GetConfig(configuration);
@@ -53,11 +54,6 @@ public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitO
     public long Count()
     {
         return GetSet().Count();
-    }
-
-    long IReadRepository<TUnitOfWork, TEntity, TKey>.Count(ISpecification<TEntity> specification)
-    {
-        return Count(specification);
     }
 
     /// <summary>
@@ -84,37 +80,37 @@ public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitO
         return GetSet().Where(filter).Count();
     }
 
-    public bool All(ISpecification<TEntity> specification, Action<TUnitOfWork> configuration = null)
+    public bool All(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetSet().All(specification.SatisfiedBy());
     }
 
-    public bool All(Expression<Func<TEntity, bool>> filter, Action<TUnitOfWork> configuration = null)
+    public bool All(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetSet().All(filter);
     }
 
-    public bool Any(Action<TUnitOfWork> configuration = null)
+    public bool Any(Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetSet().Any();
     }
 
-    public bool Any(ISpecification<TEntity> specification, Action<TUnitOfWork> configuration = null)
+    public bool Any(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetSet().Any(specification.SatisfiedBy());
     }
 
-    public bool Any(Expression<Func<TEntity, bool>> filter, Action<TUnitOfWork> configuration = null)
+    public bool Any(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetSet().Any(filter);
     }
 
-    public TEntity Get(TKey id, Action<TUnitOfWork> configuration = null)
+    public TEntity Get(TKey id, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return id != null ? GetSet().Find(id) : null;
     }
 
-    public IEnumerable<TEntity> GetAll(Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TEntity> GetAll(Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         IMongoQueryable<TEntity> query = GetSet();
         var config = Set<TEntity>.GetConfig(configuration);
@@ -125,17 +121,17 @@ public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitO
         return query.ToList();
     }
 
-    public IEnumerable<TResult> GetMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TResult> GetMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         throw new NotImplementedException();
     }
 
-    public IEnumerable<TResult> GetMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TResult> GetMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         throw new NotImplementedException();
     }
 
-    public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TEntity> GetFiltered(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         if (filter == null)
             throw new ArgumentException("Filter expression cannot be null", nameof(filter));
@@ -149,7 +145,7 @@ public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitO
         return query;
     }
 
-    public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, Action<TUnitOfWork> configuration = null)
+    public TEntity GetFirst(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         IMongoQueryable<TEntity> query = filter == null ? GetSet() : GetSet().Where(filter);
         var config = Set<TEntity>.GetConfig(configuration);
@@ -161,47 +157,47 @@ public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitO
         return query.FirstOrDefault();
     }
 
-    public TEntity GetFirst(ISpecification<TEntity> specification, Action<TUnitOfWork> configuration = null)
+    public TEntity GetFirst(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetFirst(specification?.SatisfiedBy(), configuration);
     }
 
-    public TResult GetFirstMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<TUnitOfWork> configuration = null)
+    public TResult GetFirstMapped<TResult>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> map, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         throw new NotImplementedException();
     }
 
-    public TResult GetFirstMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<TUnitOfWork> configuration = null)
+    public TResult GetFirstMapped<TResult>(ISpecification<TEntity> specification, Expression<Func<TEntity, TResult>> map, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         throw new NotImplementedException();
     }
 
-    public IEnumerable<TEntity> GetPaged(int limit, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TEntity> GetPaged(int limit, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetPaged((Expression<Func<TEntity, bool>>)null, 1, limit, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int limit, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetPaged(specification.SatisfiedBy(), 1, limit, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int limit, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetPaged(filter, 1, limit, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(int pageIndex, int pageSize, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TEntity> GetPaged(int pageIndex, int pageSize, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetPaged((Expression<Func<TEntity, bool>>)null, pageIndex, pageSize, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageSize, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TEntity> GetPaged(ISpecification<TEntity> specification, int pageIndex, int pageSize, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         return GetPaged(specification.SatisfiedBy(), pageIndex, pageSize, configuration);
     }
 
-    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageSize, Action<TUnitOfWork> configuration = null)
+    public IEnumerable<TEntity> GetPaged(Expression<Func<TEntity, bool>> filter, int pageIndex, int pageSize, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         IMongoQueryable<TEntity> query = GetSet();
         if (filter != null) query = query.Where(filter);
@@ -220,7 +216,7 @@ public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitO
         return query;
     }
 
-    public TEntity GetSingle(Expression<Func<TEntity, bool>> filter, Action<TUnitOfWork> configuration = null)
+    public TEntity GetSingle(Expression<Func<TEntity, bool>> filter, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         if (filter == null)
             throw new ArgumentException("Filter expression cannot be null", nameof(filter));
@@ -235,7 +231,7 @@ public class ReadRepository<TUnitOfWork, TEntity, TKey> : IReadRepository<TUnitO
         return query.SingleOrDefault();
     }
 
-    public TEntity GetSingle(ISpecification<TEntity> specification, Action<TUnitOfWork> configuration = null)
+    public TEntity GetSingle(ISpecification<TEntity> specification, Action<QueryableConfiguration<TEntity>> configuration = null)
     {
         if (specification == null)
             throw new ArgumentException("The specification cannot be null", nameof(specification));

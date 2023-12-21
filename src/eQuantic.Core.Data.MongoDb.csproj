@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>1.1.0.0-beta1</Version>
+		<Version>1.1.0.0-beta2</Version>
 		<TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
 
 		<PackageId>eQuantic.Core.Data.MongoDb</PackageId>
@@ -27,7 +27,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="eQuantic.Core.Data" Version="4.1.1" />
+		<PackageReference Include="eQuantic.Core.Data" Version="4.2.0" />
 		<PackageReference Include="MongoDb.Driver" Version="2.23.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	</ItemGroup>
