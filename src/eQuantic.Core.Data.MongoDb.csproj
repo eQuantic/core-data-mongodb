@@ -1,42 +1,50 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<Version>1.1.0.0-beta2</Version>
-		<TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
+    <PropertyGroup>
+        <Version>1.1.0.0-beta3</Version>
+        <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
 
-		<PackageId>eQuantic.Core.Data.MongoDb</PackageId>
-		<PackageTags>eQuantic;Core;Data;MongoDB;Library;Repository;Pattern</PackageTags>
-		<PackageReleaseNotes>Entity ignorant persistance with Repository Pattern</PackageReleaseNotes>
-		<PackageProjectUrl>https://github.com/eQuantic/core-data-mongodb</PackageProjectUrl>
-		<PackageOutputPath>../artifacts/</PackageOutputPath>
-		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-		<GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-		<GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<RepositoryUrl>https://github.com/eQuantic/core-data-mongodb</RepositoryUrl>
-		<RepositoryType>Git</RepositoryType>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<PackageIcon>Icon.png</PackageIcon>
-		<LangVersion>latest</LangVersion>
-	</PropertyGroup>
+        <PackageId>eQuantic.Core.Data.MongoDb</PackageId>
+        <PackageTags>eQuantic;Core;Data;MongoDB;Library;Repository;Pattern</PackageTags>
+        <PackageReleaseNotes>Entity ignorant persistance with Repository Pattern</PackageReleaseNotes>
+        <PackageProjectUrl>https://github.com/eQuantic/core-data-mongodb</PackageProjectUrl>
+        <PackageOutputPath>../artifacts/</PackageOutputPath>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+        <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+        <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+        <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+        <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+        <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <RepositoryUrl>https://github.com/eQuantic/core-data-mongodb</RepositoryUrl>
+        <RepositoryType>Git</RepositoryType>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageIcon>Icon.png</PackageIcon>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="eQuantic.Core.Data" Version="4.2.0" />
-		<PackageReference Include="MongoDb.Driver" Version="2.23.1" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-	</ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="eQuantic.Core.Data" Version="4.2.0"/>
+        <PackageReference Include="MongoDb.Driver" Version="2.23.1"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<None Include="Icon.png" Pack="true" PackagePath="Icon.png" />
-		<None Include="Icon_details.png" Pack="true" PackagePath="Icon_details.png" />
-		<None Include="Icon_dialog.png" Pack="true" PackagePath="Icon_dialog.png" />
-		<None Include="Icon_list.png" Pack="true" PackagePath="Icon_list.png" />
-		<None Include="../LICENSE" Pack="true" PackagePath="" />
-	</ItemGroup>
+    <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' ">
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.32"/>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0"/>
+    </ItemGroup>
+    
+    <ItemGroup>
+        <None Include="Icon.png" Pack="true" PackagePath="Icon.png"/>
+        <None Include="Icon_details.png" Pack="true" PackagePath="Icon_details.png"/>
+        <None Include="Icon_dialog.png" Pack="true" PackagePath="Icon_dialog.png"/>
+        <None Include="Icon_list.png" Pack="true" PackagePath="Icon_list.png"/>
+        <None Include="../LICENSE" Pack="true" PackagePath=""/>
+    </ItemGroup>
 </Project>

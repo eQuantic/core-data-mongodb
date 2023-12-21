@@ -2,19 +2,22 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using eQuantic.Core.Data.MongoDb.Repository.Options;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Options;
 using MongoDB.Driver;
-
+using Microsoft.Extensions.DependencyInjection;
 namespace eQuantic.Core.Data.MongoDb.Repository;
 
 public class UnitOfWork : IQueryableUnitOfWork
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly IMongoDatabase _database;
     private readonly Dictionary<Type,object> _sets = new();
         
-    public UnitOfWork(MongoOptions options)
+    public UnitOfWork(MongoOptions options, IServiceProvider serviceProvider)
     {
+        _serviceProvider = serviceProvider;
         IMongoClient client = new MongoClient(options.ConnectionString);
         _database = client.GetDatabase(options.Database);
     }
@@ -74,12 +77,12 @@ public class UnitOfWork : IQueryableUnitOfWork
 
     public IQueryableRepository<TUnitOfWork, TEntity, TKey> GetQueryableRepository<TUnitOfWork, TEntity, TKey>() where TUnitOfWork : IQueryableUnitOfWork where TEntity : class, IEntity, new()
     {
-        throw new NotImplementedException();
+        return _serviceProvider.GetRequiredService<IQueryableRepository<TUnitOfWork, TEntity, TKey>>();
     }
 
     public IAsyncQueryableRepository<TUnitOfWork, TEntity, TKey> GetAsyncQueryableRepository<TUnitOfWork, TEntity, TKey>() where TUnitOfWork : IQueryableUnitOfWork where TEntity : class, IEntity, new()
     {
-        throw new NotImplementedException();
+        return _serviceProvider.GetRequiredService<IAsyncQueryableRepository<TUnitOfWork, TEntity, TKey>>();
     }
 
     public void Dispose()
@@ -93,11 +96,11 @@ public class UnitOfWork : IQueryableUnitOfWork
 
     public IRepository<TUnitOfWork, TEntity, TKey> GetRepository<TUnitOfWork, TEntity, TKey>() where TUnitOfWork : IUnitOfWork where TEntity : class, IEntity, new()
     {
-        throw new NotImplementedException();
+        return _serviceProvider.GetRequiredService<IRepository<TUnitOfWork, TEntity, TKey>>();
     }
 
     public IAsyncRepository<TUnitOfWork, TEntity, TKey> GetAsyncRepository<TUnitOfWork, TEntity, TKey>() where TUnitOfWork : IUnitOfWork where TEntity : class, IEntity, new()
     {
-        throw new NotImplementedException();
+        return _serviceProvider.GetRequiredService<IAsyncRepository<TUnitOfWork, TEntity, TKey>>();
     }
 }

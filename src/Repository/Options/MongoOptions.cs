@@ -1,4 +1,4 @@
-namespace eQuantic.Core.Data.MongoDb.Repository;
+namespace eQuantic.Core.Data.MongoDb.Repository.Options;
 
 public class MongoOptions
 {
