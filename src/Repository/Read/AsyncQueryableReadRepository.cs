@@ -174,12 +174,8 @@ public class AsyncQueryableReadRepository<TUnitOfWork, TEntity, TKey> :
         Action<QueryableConfiguration<TEntity>> configuration, 
         CancellationToken cancellationToken)
     {
-        var config = Set<TEntity>.GetConfig(configuration);
-        if (config.SortingColumns != null && config.SortingColumns.Any())
-        {
-            return await ((IOrderedMongoQueryable<TEntity>)GetSet().OrderBy(config.SortingColumns.ToArray())).ToListAsync(cancellationToken);
-        }
-        return await GetSet().ToListAsync(cancellationToken);
+        var query = GetSet().GetQueryable(configuration, o => o);
+        return await query.ToListAsync(cancellationToken);
     }
     
     public Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken)
@@ -272,13 +268,8 @@ public class AsyncQueryableReadRepository<TUnitOfWork, TEntity, TKey> :
         if (filter == null)
             throw new ArgumentException("Filter expression cannot be null", nameof(filter));
 
-        IMongoQueryable<TEntity> query = GetSet().Where(filter);
-
-        var config = Set<TEntity>.GetConfig(configuration);
-        if (config.SortingColumns != null && config.SortingColumns.Any())
-        {
-            query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(config.SortingColumns.ToArray());
-        }
+        var query = GetSet()
+            .GetQueryable(configuration, o => o.Where(filter));
 
         return await query.ToListAsync(cancellationToken);
     }
@@ -302,15 +293,9 @@ public class AsyncQueryableReadRepository<TUnitOfWork, TEntity, TKey> :
         Action<QueryableConfiguration<TEntity>> configuration,
         CancellationToken cancellationToken)
     {
-        IMongoQueryable<TEntity> query = GetSet();
-        if (filter != null) query = query.Where(filter);
-
-        var config = Set<TEntity>.GetConfig(configuration);
-        if (config.SortingColumns != null && config.SortingColumns.Any())
-        {
-            query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(config.SortingColumns.ToArray());
-        }
-
+        var query = GetSet()
+            .GetQueryable(configuration, filter != null ? o => o.Where(filter) : o => o);
+        
         return query.FirstOrDefaultAsync(cancellationToken);
     }
     
@@ -534,14 +519,8 @@ public class AsyncQueryableReadRepository<TUnitOfWork, TEntity, TKey> :
         Action<QueryableConfiguration<TEntity>> configuration,
         CancellationToken cancellationToken)
     {
-        IMongoQueryable<TEntity> query = GetSet();
-        if (filter != null) query = query.Where(filter);
-
-        var config = Set<TEntity>.GetConfig(configuration);
-        if (config.SortingColumns != null && config.SortingColumns.Any())
-        {
-            query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(config.SortingColumns.ToArray());
-        }
+        var query = GetSet()
+            .GetQueryable(configuration, filter != null ? o => o.Where(filter) : o => o);
         if (pageSize > 0)
         {
             int skip = (pageIndex - 1) * pageSize;
@@ -574,14 +553,8 @@ public class AsyncQueryableReadRepository<TUnitOfWork, TEntity, TKey> :
     {
         if (filter == null)
             throw new ArgumentException("Filter expression cannot be null", nameof(filter));
-
-        IMongoQueryable<TEntity> query = GetSet().Where(filter);
-
-        var config = Set<TEntity>.GetConfig(configuration);
-        if (config.SortingColumns != null && config.SortingColumns.Any())
-        {
-            query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(config.SortingColumns.ToArray());
-        }
+        
+        var query = GetSet().GetQueryable(configuration, o => o.Where(filter));
         return query.SingleOrDefaultAsync(cancellationToken);
     }
     

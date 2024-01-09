@@ -6,8 +6,10 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using eQuantic.Core.Data.MongoDb.Repository.Extensions;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Config;
+using eQuantic.Linq.Extensions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -20,12 +22,14 @@ namespace eQuantic.Core.Data.MongoDb.Repository;
 public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEntity>
     where TEntity : class, IEntity, new()
 {
+    private readonly IMongoDatabase _database;
     private const string IdKey = "_id";
     private readonly IMongoCollection<TEntity> collection;
     private readonly IMongoQueryable<TEntity> internalQueryable;
 
     public Set(IMongoDatabase database)
     {
+        _database = database;
         this.collection = database.GetCollection<TEntity>(typeof(TEntity).Name);
         this.internalQueryable = collection.AsQueryable();
     }
@@ -376,7 +380,7 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
         }
     }
     
-    internal static TConfig GetConfig<TConfig>(Action<TConfig> configuration)
+    private static TConfig GetConfig<TConfig>(Action<TConfig> configuration)
         where TConfig : Configuration<TEntity>
     {
         Configuration<TEntity> config;
@@ -392,5 +396,44 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
         configuration.Invoke((TConfig)config);
 
         return (TConfig)config;
+    }
+
+    internal IMongoQueryable<TEntity> GetQueryable<TConfig>(Action<TConfig> configuration,
+        Func<IQueryable<TEntity>, IQueryable<TEntity>> internalQueryAction)
+        where TConfig : Configuration<TEntity>
+    {
+        if (configuration == null)
+        {
+            return (IMongoQueryable<TEntity>)internalQueryAction.Invoke(this);
+        }
+
+        var config = GetConfig(configuration);
+        var queryableConfig = config as QueryableConfiguration<TEntity>;
+
+        IMongoQueryable<TEntity> query = this;
+
+        if (config.Properties?.Any() == true)
+        {
+            query = (IMongoQueryable<TEntity>)query.IncludeMany(_database, config.Properties.ToArray());
+        }
+
+        if (queryableConfig != null)
+        {
+            query = (IMongoQueryable<TEntity>)queryableConfig.BeforeCustomization.Invoke(query);
+        }
+
+        query = (IMongoQueryable<TEntity>)internalQueryAction.Invoke(query);
+
+        if (config.SortingColumns.Any())
+        {
+            query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(config.SortingColumns.ToArray());
+        }
+
+        if (queryableConfig != null)
+        {
+            query = (IMongoQueryable<TEntity>)queryableConfig.AfterCustomization.Invoke(query);
+        }
+        
+        return query;
     }
 }

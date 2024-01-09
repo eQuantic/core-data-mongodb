@@ -27,13 +27,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="eQuantic.Core.Data" Version="4.2.0"/>
+        <PackageReference Include="eQuantic.Core.Data" Version="4.2.1" />
         <PackageReference Include="MongoDb.Driver" Version="2.23.1"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' ">
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.32"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.32" />
     </ItemGroup>
 
     <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
