@@ -1,11 +1,12 @@
 name: eQuantic Core Data MongoDb
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: windows-latest
-
+    env:
+      PUSH_PACKAGES: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET Core
@@ -14,5 +15,6 @@ jobs:
           dotnet-version: 8.0.x
       - name: Build eQuantic.Core.Data.MongoDb Library
         run: dotnet build --configuration Release
-      - name: Push package into Nuget.org
+      - if: ${{ env.PUSH_PACKAGES }}
+        name: Push package into Nuget.org
         run: dotnet nuget push **/*.nupkg --skip-duplicate -k ${{secrets.nuget_key}} -s https://api.nuget.org/v3/index.json

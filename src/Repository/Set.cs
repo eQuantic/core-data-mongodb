@@ -1,13 +1,18 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using eQuantic.Core.Data.MongoDb.Repository.Extensions;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Config;
+using eQuantic.Core.Extensions;
+using eQuantic.Linq.Extensions;
+using Humanizer;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -20,52 +25,62 @@ namespace eQuantic.Core.Data.MongoDb.Repository;
 public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEntity>
     where TEntity : class, IEntity, new()
 {
+    private readonly IMongoDatabase _database;
     private const string IdKey = "_id";
-    private readonly IMongoCollection<TEntity> collection;
-    private readonly IMongoQueryable<TEntity> internalQueryable;
-
+    private readonly IMongoCollection<TEntity> _collection;
+    private readonly IMongoQueryable<TEntity> _internalQueryable;
+    private const string DefaultEntitySuffix = "Data";
+    
     public Set(IMongoDatabase database)
     {
-        this.collection = database.GetCollection<TEntity>(typeof(TEntity).Name);
-        this.internalQueryable = collection.AsQueryable();
+        _database = database;
+
+        var type = typeof(TEntity);
+        var tableAttr = type.GetCustomAttribute<TableAttribute>();
+        var collectionName = type.Name.TrimEnd(DefaultEntitySuffix).Pluralize();
+        if (tableAttr != null)
+            collectionName = tableAttr.Name;
+        
+        _collection = database.GetCollection<TEntity>(collectionName);
+        _internalQueryable = _collection.AsQueryable();
     }
 
-    public Type ElementType => internalQueryable.ElementType;
+    public Type ElementType => _internalQueryable.ElementType;
 
-    public Expression Expression => internalQueryable.Expression;
+    public Expression Expression => _internalQueryable.Expression;
 
-    public IQueryProvider Provider => internalQueryable.Provider;
+    public IQueryProvider Provider => _internalQueryable.Provider;
 
     public void Delete(Expression<Func<TEntity, bool>> filter)
     {
-        this.collection.DeleteOne(filter);
+        this._collection.DeleteOne(filter);
     }
 
     public Task DeleteAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default)
     {
-        return this.collection.DeleteOneAsync(filter, cancellationToken);
+        return this._collection.DeleteOneAsync(filter, cancellationToken);
     }
 
     public long DeleteMany(Expression<Func<TEntity, bool>> filter)
     {
-        var result = this.collection.DeleteMany(filter);
+        var result = this._collection.DeleteMany(filter);
         return result.DeletedCount;
     }
 
     public async Task<long> DeleteManyAsync(Expression<Func<TEntity, bool>> filter, CancellationToken cancellationToken = default)
     {
-        var result = await this.collection.DeleteManyAsync(filter, cancellationToken);
+        var result = await this._collection.DeleteManyAsync(filter, cancellationToken);
         return result.DeletedCount;
     }
 
     public IEnumerable<TEntity> Execute()
     {
-        return internalQueryable.ToList();
+        return _internalQueryable.ToList();
     }
 
     public IFindFluent<TEntity, TEntity> Find(Expression<Func<TEntity, bool>> filter)
     {
-        return this.collection.Find(filter);
+        return this._collection.Find(filter);
     }
 
     public TEntity Find<TKey>(TKey key)
@@ -76,7 +91,7 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
         //    return this.collection.Find(expression).FirstOrDefault();
         //}
         var filter = Builders<TEntity>.Filter.Eq(IdKey, ParseKeyValue(key));
-        return this.collection.Find(filter).FirstOrDefault();
+        return this._collection.Find(filter).FirstOrDefault();
     }
 
     public async Task<TEntity> FindAsync<TKey>(TKey key, CancellationToken cancellationToken = default)
@@ -89,23 +104,23 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
         //    return cursor.FirstOrDefault();
         //}
         var filter = Builders<TEntity>.Filter.Eq(IdKey, ParseKeyValue(key));
-        var cursor = await this.collection.FindAsync(filter, null, cancellationToken);
+        var cursor = await this._collection.FindAsync(filter, null, cancellationToken);
         return cursor.FirstOrDefault();
     }
 
     public IEnumerator<TEntity> GetEnumerator()
     {
-        return internalQueryable.GetEnumerator();
+        return _internalQueryable.GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return internalQueryable.GetEnumerator();
+        return _internalQueryable.GetEnumerator();
     }
 
     public QueryableExecutionModel GetExecutionModel()
     {
-        return internalQueryable.GetExecutionModel();
+        return _internalQueryable.GetExecutionModel();
     }
 
     public virtual Expression<Func<TEntity, bool>> GetKeyExpression<TKey>(TKey key)
@@ -149,49 +164,49 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
 
     public void Insert(TEntity item)
     {
-        this.collection.InsertOne(item);
+        this._collection.InsertOne(item);
     }
 
     public Task InsertAsync(TEntity item, CancellationToken cancellationToken = default)
     {
-        return this.collection.InsertOneAsync(item, null, cancellationToken);
+        return this._collection.InsertOneAsync(item, null, cancellationToken);
     }
 
     public IAsyncCursor<TEntity> ToCursor(CancellationToken cancellationToken = default)
     {
-        return internalQueryable.ToCursor(cancellationToken);
+        return _internalQueryable.ToCursor(cancellationToken);
     }
 
     public Task<IAsyncCursor<TEntity>> ToCursorAsync(CancellationToken cancellationToken = default)
     {
-        return internalQueryable.ToCursorAsync(cancellationToken);
+        return _internalQueryable.ToCursorAsync(cancellationToken);
     }
 
     public long Update(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression)
     {
         var updateDefinition = GetUpdateDefinition(updateExpression.Body);
-        var result = this.collection.UpdateOne<TEntity>(filter, updateDefinition);
+        var result = this._collection.UpdateOne<TEntity>(filter, updateDefinition);
         return result.ModifiedCount;
     }
 
     public async Task<long> UpdateAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity>> updateExpression, CancellationToken cancellationToken = default)
     {
         var updateDefinition = GetUpdateDefinition(updateExpression.Body);
-        var result = await this.collection.UpdateOneAsync<TEntity>(filter, updateDefinition, null, cancellationToken);
+        var result = await this._collection.UpdateOneAsync<TEntity>(filter, updateDefinition, null, cancellationToken);
         return result.ModifiedCount;
     }
 
     public long UpdateMany(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateExpression)
     {
         var updateDefinition = GetUpdateDefinition(updateExpression.Body);
-        var result = this.collection.UpdateMany(filter, updateDefinition);
+        var result = this._collection.UpdateMany(filter, updateDefinition);
         return result.ModifiedCount;
     }
 
     public async Task<long> UpdateManyAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TEntity>> updateExpression, CancellationToken cancellationToken = default)
     {
         var updateDefinition = GetUpdateDefinition(updateExpression.Body);
-        var result = await this.collection.UpdateManyAsync(filter, updateDefinition, null, cancellationToken);
+        var result = await this._collection.UpdateManyAsync(filter, updateDefinition, null, cancellationToken);
         return result.ModifiedCount;
     }
 
@@ -376,7 +391,7 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
         }
     }
     
-    internal static TConfig GetConfig<TConfig>(Action<TConfig> configuration)
+    private static TConfig GetConfig<TConfig>(Action<TConfig> configuration)
         where TConfig : Configuration<TEntity>
     {
         Configuration<TEntity> config;
@@ -392,5 +407,44 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
         configuration.Invoke((TConfig)config);
 
         return (TConfig)config;
+    }
+
+    internal IMongoQueryable<TEntity> GetQueryable<TConfig>(Action<TConfig> configuration,
+        Func<IQueryable<TEntity>, IQueryable<TEntity>> internalQueryAction)
+        where TConfig : Configuration<TEntity>
+    {
+        if (configuration == null)
+        {
+            return (IMongoQueryable<TEntity>)internalQueryAction.Invoke(this);
+        }
+
+        var config = GetConfig(configuration);
+        var queryableConfig = config as QueryableConfiguration<TEntity>;
+
+        IMongoQueryable<TEntity> query = this;
+
+        if (config.Properties?.Any() == true)
+        {
+            query = (IMongoQueryable<TEntity>)query.IncludeMany(_database, config.Properties.ToArray());
+        }
+
+        if (queryableConfig != null)
+        {
+            query = (IMongoQueryable<TEntity>)queryableConfig.BeforeCustomization.Invoke(query);
+        }
+
+        query = (IMongoQueryable<TEntity>)internalQueryAction.Invoke(query);
+
+        if (config.SortingColumns.Any())
+        {
+            query = (IOrderedMongoQueryable<TEntity>)query.OrderBy(config.SortingColumns.ToArray());
+        }
+
+        if (queryableConfig != null)
+        {
+            query = (IMongoQueryable<TEntity>)queryableConfig.AfterCustomization.Invoke(query);
+        }
+        
+        return query;
     }
 }
