@@ -49,7 +49,7 @@ public static class QueryableExtensions
                 .FirstOrDefault (m => 
                     m.Name.Equals(nameof(MongoQueryable.Join)) && 
                     m.GetParameters().Any(p => p.ParameterType.Name == typeof(IMongoCollection<>).Name))?
-                .MakeGenericMethod(type, propertyInfo.PropertyType, primaryKey?.PropertyType, typeof(TEntity));
+                .MakeGenericMethod(type, propertyInfo.PropertyType, propKeyInfo.PropertyType, typeof(TEntity));
             
             if (joinMethod == null) 
                 continue;

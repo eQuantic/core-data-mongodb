@@ -82,8 +82,6 @@ public class QueryableReadRepositoryTests
 
     private static void SetInitialData(UnitOfWork unitOfWork)
     {
-        
-        
         var subDocs = new List<TestSubDocumentData>
         {
             new() { Name = "sub1"},

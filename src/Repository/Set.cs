@@ -301,7 +301,8 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
         {
             if (updateDefinition == null)
                 updateDefinition = updateBuilder.Set(kvp.Key, kvp.Value);
-            else updateDefinition.Set(kvp.Key, kvp.Value);
+            else 
+                updateDefinition = updateDefinition.Set(kvp.Key, kvp.Value);
         }
         return updateDefinition;
     }

@@ -11,18 +11,33 @@ public static class TypeExtensions
 {
     public static PropertyInfo GetForeignKey(this Type type, string propertyName)
     {
-        return type.GetProperties()
+        var prop = type.GetProperties()
             .FirstOrDefault(p =>
                 p.GetCustomAttribute<ForeignKeyAttribute>() != null &&
                 p.GetCustomAttribute<ForeignKeyAttribute>().Name.Equals(propertyName,
                     StringComparison.InvariantCultureIgnoreCase));
+        if (prop == null)
+        {
+            prop = type.GetProperties()
+                .FirstOrDefault(p =>
+                    p.Name.Equals($"{propertyName}Id", StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        return prop;
     }
     
     public static PropertyInfo GetPrimaryKey(this Type type)
     {
-        return type.GetProperties()
+        var prop = type.GetProperties()
             .FirstOrDefault(p => 
                 p.GetCustomAttribute<KeyAttribute>() != null || 
                 p.GetCustomAttribute<BsonIdAttribute>() != null);
+        if (prop == null)
+        {
+            prop = type.GetProperties()
+                .FirstOrDefault(p => p.Name.Equals("Id", StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        return prop;
     }
 }
