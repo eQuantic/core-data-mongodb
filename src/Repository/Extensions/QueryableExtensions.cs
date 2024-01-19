@@ -32,9 +32,11 @@ public static class QueryableExtensions
         var currentType = typeof(TEntity);
         foreach (var propertyInfo in properties)
         {
+            var type = typeof(TEntity);
             var propKeyInfo = currentType.GetForeignKey(propertyInfo.Name);
             var propKeyExp = propKeyInfo?.Name.GetColumnExpression(currentType);
-            var keyExp = propertyInfo.PropertyType.GetPrimaryKey()?.Name.GetColumnExpression(propertyInfo.PropertyType);
+            var primaryKey = propertyInfo.PropertyType.GetPrimaryKey();
+            var keyExp = primaryKey?.Name.GetColumnExpression(propertyInfo.PropertyType);
             
             currentType = propertyInfo.PropertyType;
             
@@ -42,10 +44,17 @@ public static class QueryableExtensions
                 continue;
             
             var collection = database.GetCollection(propertyInfo.PropertyType);
-            var joinMethod = typeof(MongoQueryable).GetMethod(nameof(MongoQueryable.Join));
+            var joinMethod = typeof(MongoQueryable)
+                .GetMethods()
+                .FirstOrDefault (m => 
+                    m.Name.Equals(nameof(MongoQueryable.Join)) && 
+                    m.GetParameters().Any(p => p.ParameterType.Name == typeof(IMongoCollection<>).Name))?
+                .MakeGenericMethod(type, propertyInfo.PropertyType, primaryKey?.PropertyType, typeof(TEntity));
             
             if (joinMethod == null) 
                 continue;
+
+            var resultExp = MappingDynamicFunc(typeof(TEntity), propertyInfo.PropertyType, propertyInfo.Name);
             
             query = joinMethod
                 .Invoke(null, new object[]
@@ -53,7 +62,8 @@ public static class QueryableExtensions
                     mongoQuery, 
                     collection, 
                     propKeyExp,
-                    keyExp
+                    keyExp,
+                    resultExp
                 }) as IQueryable<TEntity>;
             return query;
         }
@@ -157,5 +167,28 @@ public static class QueryableExtensions
 
         throw new ArgumentException($"{propertyName} could not be parsed. {declaringType} does not contain a property named '{subPropertyName}'.", nameof(propertyName));
 
+    }
+
+    private static Expression MappingDynamicFunc(Type firstType, Type secondType, string propertyName)
+    {
+        var method = typeof(QueryableExtensions)
+            .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+            .FirstOrDefault(m => m.Name.Equals(nameof(MappingDynamicFunc)) && m.IsGenericMethod)?
+            .MakeGenericMethod(firstType, secondType);
+        return (Expression)method?.Invoke(null, new object[] { propertyName });
+    }
+    
+    private static Expression<Func<TFirst, TSecond, TFirst>> MappingDynamicFunc<TFirst, TSecond>(string propertyName)
+    {
+        var typeFirst = typeof(TFirst);
+        var paramFirst = Expression.Parameter(typeFirst, "paramFirst");
+        var paramSecond = Expression.Parameter(typeof(TSecond), "paramSecond");
+        var ctor = Expression.New(typeFirst);
+        var propertyInfos = typeFirst.GetProperties();
+        var objInit = Expression
+            .MemberInit(ctor, propertyInfos.Select(pi =>
+                Expression.Bind(pi,pi.Name == propertyName ? paramSecond : Expression.Property(paramFirst, pi.Name))));
+        
+        return Expression.Lambda<Func<TFirst, TSecond, TFirst>>(objInit, new ParameterExpression[] { paramFirst, paramSecond });
     }
 }

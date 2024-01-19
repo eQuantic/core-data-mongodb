@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -10,9 +9,7 @@ using System.Threading.Tasks;
 using eQuantic.Core.Data.MongoDb.Repository.Extensions;
 using eQuantic.Core.Data.Repository;
 using eQuantic.Core.Data.Repository.Config;
-using eQuantic.Core.Extensions;
 using eQuantic.Linq.Extensions;
-using Humanizer;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -29,19 +26,11 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
     private const string IdKey = "_id";
     private readonly IMongoCollection<TEntity> _collection;
     private readonly IMongoQueryable<TEntity> _internalQueryable;
-    private const string DefaultEntitySuffix = "Data";
     
     public Set(IMongoDatabase database)
     {
         _database = database;
-
-        var type = typeof(TEntity);
-        var tableAttr = type.GetCustomAttribute<TableAttribute>();
-        var collectionName = type.Name.TrimEnd(DefaultEntitySuffix).Pluralize();
-        if (tableAttr != null)
-            collectionName = tableAttr.Name;
-        
-        _collection = database.GetCollection<TEntity>(collectionName);
+        _collection = database.GetCollection<TEntity>();
         _internalQueryable = _collection.AsQueryable();
     }
 
