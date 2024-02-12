@@ -133,22 +133,23 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
 
     public virtual TKey GetKeyValue<TKey>(TEntity item)
     {
-        var keys = GetKeys<TKey>();
+        var keys = GetKeys<TKey>().ToList();
         var values = new Dictionary<string, object>();
-        if (keys.Any())
+        if (!keys.Any()) 
+            return default;
+        
+        var itemType = typeof(TEntity);
+        foreach (var key in keys)
         {
-            var itemType = typeof(TEntity);
-            foreach (var key in keys)
-            {
-                var prop = itemType.GetProperty(key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                if (prop == null) continue;
+            var prop = itemType.GetProperty(key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            if (prop == null) continue;
 
-                values.Add(key, prop.GetValue(item));
-            }
+            values.Add(key, prop.GetValue(item));
         }
-
+            
         if (values.Count > 1) return GetKeyObject<TKey>(values);
         return (TKey)values.FirstOrDefault().Value;
+
     }
 
     public void Insert(TEntity item)
@@ -281,13 +282,12 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
     {
         var keyType = typeof(TKey);
 
-        if (Type.GetTypeCode(keyType) == TypeCode.Object)
-        {
-            var props = keyType.GetProperties();
-            return props.Select(p => p.Name);
-        }
-
-        return new[] { GetClassMap()?.IdMemberMap?.MemberInfo?.Name ?? IdKey };
+        if (keyType == typeof(Guid) || Type.GetTypeCode(keyType) != TypeCode.Object)
+            return new[] { GetClassMap()?.IdMemberMap?.MemberInfo?.Name ?? IdKey };
+        
+        var props = keyType.GetProperties();
+        return props.Select(p => p.Name);
+        
     }
 
     private UpdateDefinition<TEntity> GetUpdateDefinition(Expression updateExpression)
@@ -437,4 +437,6 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
         
         return query;
     }
+
+    protected IMongoCollection<TEntity> GetCollection() => _collection;
 }
