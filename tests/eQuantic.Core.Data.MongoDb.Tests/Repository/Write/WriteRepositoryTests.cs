@@ -6,6 +6,7 @@ using eQuantic.Core.Data.MongoDb.Repository.Options;
 using eQuantic.Core.Data.MongoDb.Repository.Read;
 using eQuantic.Core.Data.MongoDb.Repository.Write;
 using eQuantic.Core.Data.MongoDb.Tests.Entities;
+using eQuantic.Core.Data.MongoDb.Tests.Repository.Read;
 using eQuantic.Core.Data.Repository;
 using FluentAssertions;
 using Mongo2Go;
@@ -14,15 +15,15 @@ using MongoDB.Bson.Serialization.IdGenerators;
 using Moq;
 using Xunit;
 
-namespace eQuantic.Core.Data.MongoDb.Tests.Repository.Read;
+namespace eQuantic.Core.Data.MongoDb.Tests.Repository.Write;
 
-public class QueryableReadRepositoryTests
+public class WriteRepositoryTests
 {
     private const string Database = "IntegrationTest";
     
     private readonly Mock<IServiceProvider> _serviceProvider = new Mock<IServiceProvider>();
 
-    static QueryableReadRepositoryTests()
+    static WriteRepositoryTests()
     {
         BsonClassMap.RegisterClassMap<TestDocumentData>(cm =>
         {
@@ -32,7 +33,7 @@ public class QueryableReadRepositoryTests
     }
     
     [Fact]
-    public void QueryableReadRepository_GetFiltered_Successfully()
+    public void WriteRepository_Modify_Successfully()
     {
         using var runner = MongoDbRunner.Start();
         
@@ -41,44 +42,19 @@ public class QueryableReadRepositoryTests
             ConnectionString = runner.ConnectionString,
             Database = Database
         }, _serviceProvider.Object);
-
+        
         SetInitialData(unitOfWork);
         
-        var repository = new QueryableReadRepository<UnitOfWork, TestDocumentData, Guid>(unitOfWork);
-        
-        var result = repository
-            .GetFiltered(o => o.Name == "test1")
-            .ToArray();
-        
-        result.Should().OnlyContain(o => o.Name == "test1");
-        result.Should().HaveCount(1);
+        var readRepository = new QueryableReadRepository<UnitOfWork, TestDocumentData, Guid>(unitOfWork);
+        var repository = new WriteRepository<UnitOfWork, TestDocumentData, Guid>(unitOfWork);
+
+        var item = readRepository.GetFirst(o => o.Name == "test1");
+        item.Name = "newTest1";
+        repository.Modify(item);
+
+        item.Name.Should().Be("newTest1");
     }
     
-    [Fact]
-    public void QueryableReadRepository_GetAll_WithProperties_Successfully()
-    {
-        using var runner = MongoDbRunner.Start();
-        
-        var unitOfWork = new UnitOfWork(new MongoOptions
-        {
-            ConnectionString = runner.ConnectionString,
-            Database = Database
-        }, _serviceProvider.Object);
-
-        SetInitialData(unitOfWork);
-        
-        var repository = new QueryableReadRepository<UnitOfWork, TestDocumentData, Guid>(unitOfWork);
-        
-        var result = repository
-            .GetAll(opt =>
-            {
-                opt.WithProperties(nameof(TestDocumentData.SubDocument));
-            })
-            .ToArray();
-        
-        result.Should().HaveCount(4);
-    }
-
     private static void SetInitialData(UnitOfWork unitOfWork)
     {
         var subDocs = new List<TestSubDocumentData>
@@ -104,7 +80,7 @@ public class QueryableReadRepositoryTests
             item.SubDocumentId = subDocs[idx].Id;
         });
     }
-
+    
     private static void InsertMany<TEntity>(UnitOfWork unitOfWork, IEnumerable<TEntity> items, Action<TEntity, int> action = null) 
         where TEntity : class, IEntity, new()
     {

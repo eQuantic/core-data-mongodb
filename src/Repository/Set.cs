@@ -257,6 +257,12 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
     {
         var keyType = typeof(TKey);
         var dict = new Dictionary<string, object>();
+        if (!IsComplexKey(keyType))
+        {
+            dict.Add(GetKeyName(), key);
+            return dict;
+        }
+        
         var props = keyType.GetProperties();
         foreach (var prop in props)
         {
@@ -282,12 +288,23 @@ public class Set<TEntity> : Data.Repository.ISet<TEntity>, IMongoQueryable<TEnti
     {
         var keyType = typeof(TKey);
 
-        if (keyType == typeof(Guid) || Type.GetTypeCode(keyType) != TypeCode.Object)
-            return new[] { GetClassMap()?.IdMemberMap?.MemberInfo?.Name ?? IdKey };
+        if (!IsComplexKey(keyType))
+            return new[] { GetKeyName() };
         
         var props = keyType.GetProperties();
         return props.Select(p => p.Name);
-        
+    }
+
+    private static bool IsComplexKey(Type keyType)
+    {
+        return !(keyType == typeof(Guid) ||
+                 keyType == typeof(ObjectId) ||
+                 Type.GetTypeCode(keyType) != TypeCode.Object);
+    }
+
+    private string GetKeyName()
+    {
+        return GetClassMap()?.IdMemberMap?.MemberInfo?.Name ?? IdKey;
     }
 
     private UpdateDefinition<TEntity> GetUpdateDefinition(Expression updateExpression)
